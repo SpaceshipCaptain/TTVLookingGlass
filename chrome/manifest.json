@@ -1,0 +1,19 @@
+{
+  "name": "TTV Looking Glass",
+  "version": "0.0.0.61",
+  "description": "Easily generate links to other perspectives while watching Twitch clips and vods.",
+  "content_scripts": [
+    {
+      "matches": ["*://clips.twitch.tv/*","*://www.twitch.tv/*"],
+      "js": ["main.js"],
+      "run_at": "document_end",
+      "css": ["style.css"]
+    }
+  ],
+  "icons": {
+    "32": "icons/32.png",
+    "64": "icons/64.png",
+    "128": "icons/128.png"
+  },
+  "manifest_version": 2
+}
