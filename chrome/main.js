@@ -38,11 +38,11 @@ function urlchecker(){
     lasturl = window.location.href;
     if(window.location.pathname.includes("/clip/") || window.location.hostname === "clips.twitch.tv"){ //if it's a clip use clipsetup
         gob.type = "clip";
-        setTimeout(() => {clipsetup()},500)
+        setTimeout(() => {clipsetup()},500);
         looper();
     } else if(window.location.pathname.includes("/videos/") || window.location.pathname.includes("/video/")){ //if vod use vodsetup
         gob.type = "vod";
-        setTimeout(() => {vodsetup()},5000);
+        setTimeout(() => {vodsetup()},500);
         looper();
     } else{
         if(document.getElementById('finderwrap') != null){(document.getElementById('finderwrap')).remove()}; //if navigating somewhere else delete finder because edgecases
@@ -69,8 +69,8 @@ function expressvod(){
 const apireturnexpress = async (input) => { //user input to get single video link back and open latest vod
     //console.log('apiexpress')
     const a = await apifetch(input);
-    if(a.user == null){return;}
-    console.log(a.user.videos.edges[0].node.id);
+    if(a.user == null){return;} //if no user exit
+    if(a.user.videos.edges.length === 0){return}; //if user exists but has no videos just exit
     var link =("https://twitch.tv/videos/").concat(a.user.videos.edges[0].node.id);
     window.open(link, "_blank");
     window.focus();
@@ -150,8 +150,8 @@ const apireturnv = async (input) => { //video information api call
         gob.vstime = Date.parse(a.video.createdAt)/1000 //start time of vod
     }
     else{
-        infodiv.innerText = "API didn't return vod info. If this problem persists contact dev->@SpaceshipCapt"
-        infodiv.style.color = "#D68029";
+        document.getElementById('infodiv').innerText = "API didn't return vod info. If this problem persists contact dev->@SpaceshipCapt"
+        document.getElementById('infodiv').style.color = "#D68029";
     }
 };
 
@@ -162,14 +162,14 @@ const apireturnc = async (input) => { //clip information api call
     }
     else{
         gob.stime =  (Date.parse(a.clip.createdAt)/1000)-30
-        infodiv.innerText = "Clip doesn't have a vod; links generated can be wildly innaccurate if this clip wasn't created during a live broadcast."
-        infodiv.style.color = "#D68029";
+        document.getElementById('infodiv').innerText = "Clip doesn't have a vod; links generated can be wildly innaccurate if this clip wasn't created during a live broadcast."
+        document.getElementById('infodiv').style.color = "#D68029";
     }
 };
 
 const apireturnu = async (input) => { //user input to get list of videos api call
     const a = await apifetch(input);
-    if(a.user == null){infodiv.innerText = "Invalid Twitch Name. Try Again."; return;}
+    if(a.user == null){document.getElementById('infodiv').innerText = "Invalid Twitch Name. Try Again."; return;}
     gob.varray = a.user.videos.edges;
     arrayvods()
 };
@@ -180,8 +180,6 @@ function boxcreate(qselector){
     let cdiv = document.createElement('div') 
     var created = target.parentNode.insertBefore(cdiv, target)
     created.setAttribute("id", "finderwrap");
-    created.setAttribute("class",  window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1));
-    //above creates a class with url pathname select this with document.querySelector("#finderWrap").classList[0]
     var top = document.getElementById('finderwrap').appendChild(document.createElement('div'))
     top.setAttribute("id", "topd")
     var bot = document.getElementById('finderwrap').appendChild(document.createElement('div'))
@@ -198,16 +196,15 @@ function boxcreate(qselector){
     submitb.setAttribute("id", "submitb")
     sbutton = document.getElementById('submitb').appendChild(document.createElement('div'))
     sbutton.setAttribute("id", "plusbutton")
-    plusbutton.innerText = "(+)"
+    sbutton.innerText = "(+)"
     
     var createinfod = document.getElementById('topd').appendChild(document.createElement('div'))
     createinfod.setAttribute("id", "infodiv")
-    infodiv.innerText = "Submit a name to get their perspective.";
+    createinfod.innerText = "Submit a name to get their perspective.";
 
     let evel = document.getElementById('targetid')
     evel.addEventListener("keydown", (event) =>{
         if(event.defaultPrevented){return;}
-
         switch(event.code) {
             case "Enter": case "NumpadEnter":
             start();
@@ -264,8 +261,8 @@ function inputedtest(current){ //input name and returns true if contained within
 
 function getinput(){
     var iname =  (targetid.value).replace(/\W/g, '');//clears the input of non alphanumeric characters
-    if(iname === ""){infodiv.innerText = "Empty input. Enter name.";return};
-    if(inputedtest(iname) === true){infodiv.innerText = "Repeat entry.";return};
+    if(iname === ""){document.getElementById('infodiv').innerText = "Empty input. Enter name.";return};
+    if(inputedtest(iname) === true){document.getElementById('infodiv').innerText = "Repeat entry.";return};
     targetid.value = ""; //clears input box
     return iname;
 }
@@ -281,7 +278,7 @@ function arrayvods(){
     }
     if(gob.stime < vodstart[vodstart.length-1]){
         gob.color = "gray";
-        infodiv.innerText = `Searched ${gob.varray.length} vods and this is older than all of them`;
+        document.getElementById('infodiv').innerText = `Searched ${gob.varray.length} vods and this is older than all of them`;
         cl();
         return 
     }
@@ -292,14 +289,14 @@ function arrayvods(){
                 gob.link = ("https://twitch.tv/videos/").concat((gob.varray[i].node.id).concat("?t=")).concat(ts)
                 gob.color="green";
                 cl();
-                infodiv.innerText = `${gob.varray.length} vods and this was found ${i+1} vods ago!`
+                document.getElementById('infodiv').innerText = `${gob.varray.length} vods and this was found ${i+1} vods ago!`
                 return 
             }
         }
         gob.color="red";
         gob.link = "novod";
         cl();
-        infodiv.innerText = `${gob.varray.length} vods and this timestamp wasn't found in any of them.`;
+        document.getElementById('infodiv').innerText = `${gob.varray.length} vods and this timestamp wasn't found in any of them.`;
     }
 }
 

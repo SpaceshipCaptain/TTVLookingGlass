@@ -1,6 +1,6 @@
 {
     "name": "TTV Looking Glass",
-    "version": "0.0.1.00",
+    "version": "0.0.1.01",
     "description": "Simply generate links to other perspectives while watching Twitch clips and vods.",
     "content_scripts": [
       {
