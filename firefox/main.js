@@ -1,4 +1,5 @@
-console.log('TTVLookingGlass Extension Initiated. Created by @SpaceshipCapt') 
+console.log('TTVLookingGlass Extension Initiated. Created by @SpaceshipCapt')
+//firefox
 
 let gob = {}; //global object because I'm lazy
 let inputed = []; //array of successful inputs
@@ -67,7 +68,7 @@ function expressvod(){
 }
 
 const apireturnexpress = async (input) => { //user input to get single video link back and open latest vod
-    //console.log('apiexpress')
+//console.log('apiexpress')
     const a = await apifetch(input);
     if(a.user == null){return;} //if no user exit
     if(a.user.videos.edges.length === 0){return}; //if user exists but has no videos just exit
@@ -175,7 +176,7 @@ const apireturnu = async (input) => { //user input to get list of videos api cal
 };
 
 function boxcreate(qselector){
-    //console.log('boxcreate')
+//console.log('boxcreate')
     let target = document.querySelector(qselector)
     let cdiv = document.createElement('div') 
     var created = target.parentNode.insertBefore(cdiv, target)
@@ -205,6 +206,7 @@ function boxcreate(qselector){
     let evel = document.getElementById('targetid')
     evel.addEventListener("keydown", (event) =>{
         if(event.defaultPrevented){return;}
+
         switch(event.code) {
             case "Enter": case "NumpadEnter":
             start();
@@ -216,6 +218,7 @@ function boxcreate(qselector){
 }
 
 function clipsetup(){
+//console.log('clipsetup');
     if(document.getElementById('finderwrap') != null){(document.getElementById('finderwrap')).remove()}; //if the input div already exists delete it
     inputed = []; //resets the inputs for rare cases
     if(window.location.hostname == "clips.twitch.tv"){//clips.twitch.tv/blahdbladhbladh view
@@ -236,7 +239,7 @@ function vodsetup(){
     apireturnv(videoquery(videoid))
 }
 function start(){
-    //console.log('start')
+//console.log('start')
     var rawname = getinput();
     if(rawname == null){return} //stops if name is a repeat
     if (gob.type === "vod"){
@@ -261,15 +264,15 @@ function inputedtest(current){ //input name and returns true if contained within
 }
 
 function getinput(){
-    var iname =  (targetid.value).replace(/\W/g, '');//clears the input of non alphanumeric characters
+    var iname =  (document.getElementById('targetid').value).replace(/\W/g, '');//clears the input of non alphanumeric characters
     if(iname === ""){document.getElementById('infodiv').innerText = "Empty input. Enter name.";return};
     if(inputedtest(iname) === true){document.getElementById('infodiv').innerText = "Repeat entry.";return};
-    targetid.value = ""; //clears input box
+    document.getElementById('targetid').value = ""; //clears input box
     return iname;
 }
 
 function arrayvods(){
-    //console.log('arrayvods')
+//console.log('arrayvods')
     var vodstart = [];
     var vodend = [];
     for(var i = 0; i < gob.varray.length; i++){ //gets start and end times of inputed user's last 100 vods
