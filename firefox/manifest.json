@@ -1,8 +1,9 @@
 {
+  
   "manifest_version": 2,
   "name": "TTV Looking Glass",
-  "version": "0.0.0.92",
-  "description": "Easily generate links to other perspectives while watching Twitch clips and vods.",
+  "version": "0.0.0.95",
+  "description": "Simply generate links to other perspectives while watching Twitch clips and vods.",
   "icons": {
     "32": "icons/32.png",
     "64": "icons/64.png",
