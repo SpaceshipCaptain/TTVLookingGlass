@@ -5,32 +5,32 @@ DOWNLOAD CHROME.ZIP OR FIREFOX.ZIP
 
 CHROME INSTRUCTONS:
 
-  1.UNZIP CHROME FILES TO FOLDER ->
+  1.unzip chrome files to folder ->
 
-  2.GOTO chrome://extensions/ -> 
+  2.goto chrome://extensions/ -> 
 
-  3.TURN ON DEVELOPER MODE TOP RIGHT -> 
+  3.turn on developer mode top right -> 
 
-  4.CLICK SLIDER TO DISABLE OTHER LOOKING GLASS VERSIONS ALREADY INSTALLED (THE WEBSTORE VERSION) ->
+  4.click slider to disable other looking glass versions already installed (the webstore version) ->
 
-  5.CLICK LOAD UNPACKED TOP LEFT -> 
+  5.click load unpacked top left -> 
 
-  6.OPEN FOLDER WITH UNZIPPED FILES
+  6.open folder with unzipped files
 
-  7.DONE
+  7.done
 
 
 FIREFOX INSTRUCTIONS:
 
-  1.DISABLE OFFICIAL VERSION IF INSTALLED HERE: about:addons ->
+  1.disable official version if installed here: about:addons ->
 
-  2.NO NEED TO UNZIP->
+  2.no need to unzip->
 
-  3.GOTO about:debugging#/runtime/this-firefox ->
+  3.goto about:debugging#/runtime/this-firefox ->
 
-  4.CLICK LOAD TEMPORARY ADD ON ->
+  4.click load temporary add on ->
 
-  5.SELECT FIREFOX.zip
+  5.select firefox.zip
 
 
 YOU HAVE INSTALLED TTV LOOKING GLASS.
