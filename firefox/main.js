@@ -77,7 +77,7 @@ const apireturnexpress = async (input) => { //user input to get single video lin
     window.focus();
 };
 
-//gql queries
+//gql queries //moreinformation here https://supersonichub1.github.io/twitch-graphql-api/
 function videoquery(input){ //video id input gets video info back
     const videoq =(
       `query {
