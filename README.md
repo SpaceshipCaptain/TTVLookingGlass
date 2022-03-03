@@ -1,5 +1,17 @@
 # LookingGlassTTV
 
+OFFICIAL LINKS
+
+CHROME INSTALL
+https://chrome.google.com/webstore/detail/ttv-looking-glass/phikemnogmdhgadokdnahneeihokkkcf
+
+FIREFOX INSTALL
+https://addons.mozilla.org/en-US/firefox/addon/ttv-looking-glass/
+
+
+How to manually install
+
+
 GOTO-> https://github.com/SpaceshipCaptain/LookingGlassTTV/releases
 DOWNLOAD CHROME.ZIP OR FIREFOX.ZIP
 
@@ -38,8 +50,3 @@ YOU HAVE INSTALLED TTV LOOKING GLASS.
 nice
 
 
-LINKS
-
-https://chrome.google.com/webstore/detail/ttv-looking-glass/phikemnogmdhgadokdnahneeihokkkcf
-
-https://addons.mozilla.org/en-US/firefox/addon/ttv-looking-glass/
