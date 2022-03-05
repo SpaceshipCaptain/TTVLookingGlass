@@ -2,7 +2,7 @@
   
   "manifest_version": 2,
   "name": "TTV Looking Glass",
-  "version": "0.0.0.97",
+  "version": "0.0.1.0",
   "description": "Simply generate links to other perspectives while watching Twitch clips and vods. Adds express vod feature to Twitch's nav bar.",
   "icons": {
     "32": "icons/32.png",

@@ -203,14 +203,14 @@ function boxcreate(qselector){
     
     var createinfod = document.getElementById('topd').appendChild(document.createElement('div'))
     createinfod.setAttribute("id", "infodiv")
-    createinfod.innerText = "Submit a name to get their perspective.";
+    createinfod.innerText = "Enter name to search vods. Ctrl+Enter to instantly open links.";
 //event listeners for submitting names
     var evel = document.getElementById('targetid')
     evel.addEventListener("keydown", (event) =>{
         if(event.defaultPrevented){return;}
-
         switch(event.code) {
             case "Enter": case "NumpadEnter":
+                gob.ctrlstate = event.getModifierState("Control") //true if control is held down during enter press false if isn't held down
             start();
         }
         })
@@ -323,6 +323,7 @@ function cl(){ //create link
     ce.setAttribute("id",`${inputed[inputed.length-1]}`);
         if(gob.color === "green"){
         ce.setAttribute("onclick", `window.open('${gob.link}', "_blank")`);
+        if(gob.ctrlstate === true){window.open(gob.link, "_blank");}
         }
     var cn = document.getElementById(`${inputed[inputed.length-1]}`).appendChild(document.createElement('p'));
     cn.setAttribute("class", "plink")

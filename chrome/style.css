@@ -71,12 +71,13 @@
     background: var(--cegreen);
     display: inline-block;
     height: 100%;
-    margin-right: 1%;
+    margin-right: .5%;
     border-radius:10px;
     padding-left: 10px;
     padding-right: 10px;
     display: flex;
     align-items: center;
+    margin-bottom:  .5%;
 }
 /*  
     #7F0423 red for no vod link 
