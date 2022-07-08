@@ -79,6 +79,18 @@
     align-items: center;
     margin-bottom:  .5%;
 }
+.ce[data-title]:after{
+    content: attr(data-title);
+    font-family: 'Roboto', sans-serif;
+    color: #ff6700;
+    font-size: 0px;
+    font-weight: bold;
+    transition: .15s;
+}
+.ce[data-title]:hover:after {
+    transition-delay: .3s;
+    font-size: 17px;
+  }
 /*  
     #7F0423 red for no vod link 
     #05483F green for yes vod

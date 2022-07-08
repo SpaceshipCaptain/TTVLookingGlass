@@ -1,7 +1,7 @@
 console.log('TTVLookingGlass Extension Initiated. Created by @SpaceshipCapt')
 //firefox
 
-var gob = {}; //global object because I'm lazy
+var gob = {}; //global object
 var inputed = []; //array of successful inputs
 
 //target query divs for extention embed
@@ -120,7 +120,7 @@ function clipquery(input){ //clip slug input and gets clip info back
     return clipq;
 };
 
-// using gql api that is not supported by twitch but helix is pain in my asshole
+// using gql api that is not supported by twitch but helix is pain
 const apifetch = async (input) => {
     let gqlfetch = fetch(`https://gql.twitch.tv/gql`, {
       method: `POST`, 
@@ -322,6 +322,8 @@ function cl(){ //create link
     ce.setAttribute("class","ce")
     ce.setAttribute("id",`${inputed[inputed.length-1]}`);
         if(gob.color === "green"){
+            re = /([^\=]+$)/; //regex to get time after last = for next line
+        ce.setAttribute("data-title", "-->  ".concat(re.exec(gob.link)[0])); //sets the target vod time to data-title for hover display
         ce.setAttribute("onclick", `window.open('${gob.link}', "_blank")`);
         if(gob.ctrlstate === true){window.open(gob.link, "_blank");}
         }
