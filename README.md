@@ -12,7 +12,7 @@ https://addons.mozilla.org/en-US/firefox/addon/ttv-looking-glass/
 How to manually install
 
 
-DOWNLOAD CHROME OR FIREFOX files
+DOWNLOAD CHROME OR FIREFOX FILES
 
 CHROME INSTRUCTONS:
 
