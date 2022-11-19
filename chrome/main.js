@@ -5,11 +5,11 @@ var gob = {}; //global object
 var inputed = []; //array of successful inputs
 
 //target query divs for extention embed
-const clipsdot = "div.Layout-sc-nxg1ff-0.jlryzx"; //clips.twitch.tv selects div below and inserts above
-const slashclips = "div.Layout-sc-nxg1ff-0.cNlzFP";  //twitch.tv/moonmoon/clips selects div below and inserts above
-const slashvideos = "div.Layout-sc-nxg1ff-0.cNlzFP"; //twitch.tv/video/numbers selects div below and inserts above
-const playertime = '.CoreText-sc-cpl358-0.Azerv[data-a-target="player-seekbar-current-time"]'; //.innertext of this selects the current vod time
-const expresstarget = 'div.Layout-sc-nxg1ff-0.fedngu'; //express vod target left of prime loot crown
+const clipsdot = "div.Layout-sc-1xcs6mc-0.hJwsAI"; //clips.twitch.tv selects div below and inserts above
+const slashclips = "div.Layout-sc-1xcs6mc-0.iofXOu";  //twitch.tv/moonmoon/clips selects div below and inserts above
+const slashvideos = "div.Layout-sc-1xcs6mc-0.iofXOu"; //twitch.tv/video/numbers selects div below and inserts above
+const playertime = '.CoreText-sc-1txzju1-0.ffZeRf[data-a-target="player-seekbar-current-time"]'; //.innertext of this selects the current vod time
+const expresstarget = 'div.Layout-sc-1xcs6mc-0.hOUwOD'; //express vod target left of prime loot crown
 
 //on load start looping
 window.onload=() =>{ 
