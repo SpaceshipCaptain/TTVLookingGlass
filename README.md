@@ -12,12 +12,11 @@ https://addons.mozilla.org/en-US/firefox/addon/ttv-looking-glass/
 How to manually install
 
 
-GOTO-> https://github.com/SpaceshipCaptain/LookingGlassTTV/releases
-DOWNLOAD CHROME.ZIP OR FIREFOX.ZIP
+DOWNLOAD CHROME OR FIREFOX files
 
 CHROME INSTRUCTONS:
 
-  1. unzip chrome files to folder ->
+  1. download chrome files into folder ->
 
   2. goto chrome://extensions/ -> 
 
@@ -27,7 +26,7 @@ CHROME INSTRUCTONS:
 
   5. click load unpacked top left -> 
 
-  6. open folder with unzipped files
+  6. open folder with files
 
   7. done
 
@@ -36,13 +35,11 @@ FIREFOX INSTRUCTIONS:
 
   1. disable official version if installed here: about:addons ->
 
-  2. no need to unzip->
+  2. goto about:debugging#/runtime/this-firefox ->
 
-  3. goto about:debugging#/runtime/this-firefox ->
+  3. click load temporary add on ->
 
-  4. click load temporary add on ->
-
-  5. select firefox.zip
+  5. select manifest.json from firefox folder
 
 
 YOU HAVE INSTALLED TTV LOOKING GLASS.
