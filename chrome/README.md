@@ -1,2 +1,2 @@
 # LookingGlassTTV
-Extension for twitch.tv clips that allows you to see the clip from other perspectives. Work in progress.
+Simply generate links to other perspectives while watching Twitch clips and vods. Adds Express Vod to Twitch's nav bar to instantly open latest vod.progress.

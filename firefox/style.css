@@ -1,16 +1,19 @@
+/*
+    --lggreen: #05483F;
+    --lgyellow: #D68029;
+    --lgred: #7F0423;
+*/
+
 #finderWrap {
     margin-top: 5px;
-    min-height: initial;
-    height: 8rem;  
-    border-radius: 10px;
 }
 
 #targetid {
     box-sizing: border-box;
     opacity: 50%;
     background-color: #18181b;
-    border-radius:10px;
-    color: white;
+    border-radius:6px;
+    color: #efeff1;
     font-size:18px;
     padding-left: 5px;
     height: 100%;
@@ -25,10 +28,10 @@
     padding-left: 10px;
     display: inline;
     text-align: left;
-    font-size: 17px;
+    font-size: 14px;
     font-weight: bold;
-    vertical-align: middle;
     font-family: 'Roboto', sans-serif;
+    color: #efeff1;
 }
 
 #submitb {
@@ -37,15 +40,9 @@
     margin-left: 5px;
 }
 
-#plusbutton {
-    vertical-align: middle;
-    font-size: 20px;
-    font-weight: bold;
-    font-family: 'Roboto', sans-serif;
-}
-
 #topd {
     padding: 5px;
+    padding-top: 1rem;
     max-height: initial;
     height: 50%;
     width: 100%;
@@ -64,56 +61,72 @@
 }
 
 .ce {
-    --cegreen: #05483F;
-    --ceyellow: #D68029;
-    --cered: #7F0423;
-
-    background: var(--cegreen);
     display: inline-block;
     height: 100%;
     margin-right: .5%;
-    border-radius:10px;
-    padding-left: 10px;
-    padding-right: 10px;
+    border-radius:6px;
+    padding-left: 7px;
+    padding-right: 7px;
     display: flex;
     align-items: center;
     margin-bottom:  .5%;
+    cursor: pointer;
+    text-align: center;
 }
 .ce[data-title]:after{
     content: attr(data-title);
     font-family: 'Roboto', sans-serif;
-    color: #ff6700;
+    font-size: 0px;
+    font-weight: bold;
+    transition: .15s;
+    color: #efeff1;
+}
+
+.ce[data-title].active:after{
+    font-size: 15px;
+  }
+
+.ce[data-title3]:before{
+    content: attr(data-title3);
+    font-family: 'Roboto', sans-serif;
+    color: #efeff1;
     font-size: 0px;
     font-weight: bold;
     transition: .15s;
 }
-.ce[data-title]:hover:after {
-    transition-delay: .3s;
-    font-size: 17px;
-  }
-/*  
-    #7F0423 red for no vod link 
-    #05483F green for yes vod
-    #D68029 yellow for no clip vod best guess
-*/
-
+.ce[data-title3].active:before {
+    font-size: 15px;
+}
 
 .plink {
-    color: white;
-    text-align: left;
+    color: #efeff1;
     font-size: 17px;
     font-weight: bold;
-    vertical-align: middle;
     font-family: 'Roboto', sans-serif;
     overflow: hidden;
+}
+.plink.active{
+    color: #ff6700;
+}
+
+.clink{
+    font-size:0rem;
+    position: relative;
+    left: -10px;
+}
+.clink.active{
+    font-size: 1.75rem;
+    cursor: pointer;
+    display: inline-block;
+    margin-bottom: .5%;
 }
 
 #expressvod {
     box-sizing: border-box;
     opacity: 50%;
     background-color: #18181b;
-    border-radius:10px;
-    color: white;
+    border-radius:6px;
+    color: #efeff1;
     font-size:12px;
     padding-left: 5px;
     height: 50%;
