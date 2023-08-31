@@ -4,10 +4,10 @@ console.log('TTVLookingGlass Extension Initiated. Created by @SpaceshipCapt')
 var ctrlstate //for opening links immediately
 
 //target query divs for extention embed
-const clipsdot = "div.Layout-sc-1xcs6mc-0.hJwsAI"; //clips.twitch.tv selects div below and inserts above
-const slashvideos = "div.Layout-sc-1xcs6mc-0.iofXOu"; //twitch.tv/video/numbers selects div below and inserts above and //twitch.tv/moonmoon/clips
-const playertime = '.CoreText-sc-1txzju1-0.ffZeRf[data-a-target="player-seekbar-current-time"]'; //.innertext of this selects the current vod time
-const expresstarget = 'div.Layout-sc-1xcs6mc-0.hOUwOD'; //express vod target left of prime loot crown
+const clipsdot = "div.Layout-sc-1xcs6mc-0.jqNpiX"; //clips.twitch.tv selects div below and inserts above
+const slashvideos = "div.Layout-sc-1xcs6mc-0.haJxdL"; //twitch.tv/video/numbers selects div below and inserts above and //twitch.tv/moonmoon/clips
+const playertime = '.CoreText-sc-1txzju1-0.kVcdCu[data-a-target="player-seekbar-current-time"]'; //.innertext of this selects the current vod time
+const expresstarget = 'div.Layout-sc-1xcs6mc-0.bFqPcI.top-nav__prime'; //express vod target left of prime loot crown
 
 //on load start looping
 window.onload=() =>{ 

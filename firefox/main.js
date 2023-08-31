@@ -4,10 +4,10 @@ console.log('TTVLookingGlass Extension Initiated. Created by @SpaceshipCapt')
 var ctrlstate //for opening links immediately
 
 //target query divs for extention embed
-const clipsdot = "div.Layout-sc-1xcs6mc-0.hJwsAI"; //clips.twitch.tv selects div below and inserts above
-const slashvideos = "div.Layout-sc-1xcs6mc-0.iofXOu"; //twitch.tv/video/numbers selects div below and inserts above and //twitch.tv/moonmoon/clips
-const playertime = '.CoreText-sc-1txzju1-0.ffZeRf[data-a-target="player-seekbar-current-time"]'; //.innertext of this selects the current vod time
-const expresstarget = 'div.Layout-sc-1xcs6mc-0.hOUwOD'; //express vod target left of prime loot crown
+const clipsdot = "div.Layout-sc-1xcs6mc-0.jqNpiX"; //clips.twitch.tv selects div below and inserts above
+const slashvideos = "div.Layout-sc-1xcs6mc-0.haJxdL"; //twitch.tv/video/numbers selects div below and inserts above and //twitch.tv/moonmoon/clips
+const playertime = '.CoreText-sc-1txzju1-0.kVcdCu[data-a-target="player-seekbar-current-time"]'; //.innertext of this selects the current vod time
+const expresstarget = 'div.Layout-sc-1xcs6mc-0.bFqPcI.top-nav__prime'; //express vod target left of prime loot crown
 
 //on load start looping
 window.onload=() =>{ 
@@ -32,10 +32,10 @@ function looper() {
 function urlchecker(){
 //console.log("checker");
     if(window.location.pathname.includes("/clip/") || window.location.hostname === "clips.twitch.tv"){ //if it's a clip use clipsetup
-        clipsetup()
+        clipsetup();
         looper();
     } else if(window.location.pathname.includes("/videos/") || window.location.pathname.includes("/video/")){ //if vod use vodsetup
-        vodsetup()
+        vodsetup();
         looper();
     } else{
         if(document.getElementById('finderwrap') != null){(document.getElementById('finderwrap')).remove()}; //if navigating somewhere else delete finder because edgecases
@@ -186,7 +186,7 @@ function boxcreate(qselector, type){
     top.setAttribute("id", "topd")
     var bot = document.getElementById('finderwrap').appendChild(document.createElement('div'))
     bot.setAttribute("id", "botd")
-    bot.addEventListener("contextmenu", function(event) { //this just prevents context menu from popping up if you misclick around bubbles
+    bot.addEventListener("contextmenu", function(event) { //this just prevents context menu from popping up if you misRclick around bubbles
         event.preventDefault();
     });
 
