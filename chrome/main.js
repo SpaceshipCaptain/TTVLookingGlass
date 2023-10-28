@@ -53,7 +53,8 @@ function expressvod(){
         if(event.defaultPrevented){return;}
         switch(event.code) {
             case "Enter": case "NumpadEnter":
-            apireturnexpress(userquery(inputbox.value, 1))
+                if(inputbox.value === "//"){apireturnexpress(userquery(window.location.pathname.split('/').filter(part => part !== '')[0],1)); //this gets channel name but not anything after
+                }else apireturnexpress(userquery(inputbox.value, 1))
             inputbox.value = "";
         }
     })
@@ -77,6 +78,9 @@ function videoquery(input){ //video id input gets video info back
               lengthSeconds
               id
               broadcastType
+              owner{
+                login
+              }
         }
       }`);
       return videoq
@@ -104,6 +108,9 @@ function clipquery(input){ //clip slug input and gets clip info back
     const clipq =(
       `query {
         clip(slug: "${input}") {
+            broadcaster{
+                login
+            }
             createdAt
             durationSeconds
             videoOffsetSeconds
@@ -139,10 +146,12 @@ const apireturnv = async (input) => { //video information api call
     if(a.video.broadcastType != "ARCHIVE" && a.video.broadcastType != null){
         document.getElementById('infodiv').innerText = "This is not a vod. Looking Glass will not function properly."
         document.getElementById('infodiv').style.color = "#D68029";
-        document.getElementById('finderwrap').setAttribute('data-time', 804643200) //this is just to have an old starttime to not confuse user
+        document.getElementById('finderwrap').setAttribute('data-time', 804643200); //this is just to have an old starttime to not confuse user
+        document.getElementById('finderwrap').setAttribute('data-name', a.video.owner.login);
     }
     else{
         document.getElementById('finderwrap').setAttribute('data-time', Date.parse(a.video.createdAt)/1000); //start time of vod
+        document.getElementById('finderwrap').setAttribute('data-name', a.video.owner.login);
     }
 };
 
@@ -150,9 +159,11 @@ const apireturnc = async (input) => { //clip information api call
     const a = await apifetch(input);
     if(a.clip.video != null){
         document.getElementById('finderwrap').setAttribute('data-time', (Date.parse(a.clip.video.createdAt)/1000)+a.clip.videoOffsetSeconds) //gets clips parent vod creation time and adds clip offset to get absolute time of clip
+        document.getElementById('finderwrap').setAttribute('data-name', a.clip.broadcaster.login);
     }
     else{
         document.getElementById('finderwrap').setAttribute('data-time', (Date.parse(a.clip.createdAt)/1000)-30)
+        document.getElementById('finderwrap').setAttribute('data-name', a.clip.broadcaster.login);
         document.getElementById('infodiv').innerText = "Clip doesn't have a vod; links generated can be wildly innaccurate if this clip wasn't created during a live broadcast."
         document.getElementById('infodiv').style.color = "#D68029";
     }
@@ -199,7 +210,7 @@ function boxcreate(qselector, type){
     
     var createinfod = document.getElementById('topd').appendChild(document.createElement('div'))
     createinfod.setAttribute("id", "infodiv")
-    createinfod.innerText = "Enter name to search vods. Ctrl+Enter to instantly open links.";
+    createinfod.innerText = "Enter name to search vods. Ctrl+Enter to instantly open links. Enter // as shortcut to search broadcaster's vods";
 
 //event listener for submitting names
     var evel = document.getElementById('targetid')
@@ -244,7 +255,9 @@ function start(){
 }
 
 function getinput(){
-    var iname =  (document.getElementById('targetid').value).replace(/\W/g, '');//clears the input of non alphanumeric characters
+    var iname;
+    if(document.getElementById('targetid').value ==="//"){iname = document.getElementById('finderwrap').getAttribute('data-name')
+} else(iname =  (document.getElementById('targetid').value).replace(/\W/g, ''));//clears the input of non alphanumeric characters
     if(iname === ""){document.getElementById('infodiv').innerText = "Empty input. Enter name.";return};
     document.getElementById('targetid').value = ""; //clears input box
     return iname;
@@ -333,7 +346,7 @@ function cl(link, color, name){ //create link
     close.addEventListener("click", function() {
         if (close.classList.contains('active')){
             ce.remove()+close.remove();
-            document.getElementById('infodiv').innerText = "Enter name to search vods. Ctrl+Enter to instantly open links.";
+            document.getElementById('infodiv').innerText = "Enter name to search vods. Ctrl+Enter to instantly open links. Enter // as shortcut to search broadcaster's vods";
         }
     })
     if(color === "green"){(ce.style.background = "#05483F") && (ce.style.cursor='pointer')}; 
@@ -343,7 +356,7 @@ function cl(link, color, name){ //create link
         ce.addEventListener("contextmenu", function(event) {
             event.preventDefault();
             ce.remove();
-            document.getElementById('infodiv').innerText = "Enter name to search vods. Ctrl+Enter to instantly open links.";
+            document.getElementById('infodiv').innerText = "Enter name to search vods. Ctrl+Enter to instantly open links. Enter // as shortcut to search broadcaster's vods";
           });
     }
 }
