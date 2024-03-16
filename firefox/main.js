@@ -218,7 +218,7 @@ function boxcreate(qselector, type){
         switch(event.code) {
             case "Enter": case "NumpadEnter":
             ctrlstate = event.getModifierState("Control") //true if control is held down during enter press false if isn't held down
-            start();
+            start(getinput());
         }
         })
 }
@@ -228,11 +228,14 @@ function clipsetup(){
     const type = "clip";
     if(window.location.hostname == "clips.twitch.tv"){//clips.twitch.tv/blahdbladhbladh view
         boxcreate(clipsdot, type);
+        setTimeout(() => {
+            start(document.getElementById('finderwrap').getAttribute('data-name'));
+        }, 1500);
     }; 
     if(window.location.hostname == "www.twitch.tv"){ //channel clips view eg twitch.tv/moonmoon/clips/blahblahblah
         boxcreate(slashvideos, type);
     };
-    apireturnc(clipquery(window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1))); 
+    apireturnc(clipquery(window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1)));
 } 
 
 function vodsetup(){
@@ -241,10 +244,9 @@ function vodsetup(){
     boxcreate(slashvideos, type);
     apireturnv(videoquery(window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1)))
 }
-function start(){
+function start(rawname){
 //console.log('start')
-    var rawname = getinput();
-    if(rawname == null){return} //stops if name is a repeat
+    if(rawname == null){return} //stops if name is null
     if (document.getElementById('finderwrap').getAttribute('data-type') === "vod"){
         document.getElementById('finderwrap').setAttribute('data-offset', cleanTime(document.body.querySelector(playertime).innerText)); //get seconds back
         var namet = secondsCalc(0).concat(" "+rawname)
