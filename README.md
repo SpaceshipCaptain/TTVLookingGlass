@@ -1,4 +1,4 @@
-# LookingGlassTTV
+# TTV Looking Glass
 
 OFFICIAL LINKS
 
