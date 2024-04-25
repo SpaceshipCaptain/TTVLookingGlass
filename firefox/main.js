@@ -1,75 +1,239 @@
 console.log('TTVLookingGlass Extension Initiated. Created by @SpaceshipCapt')
-//firefox
-var ctrlstate //for opening links immediately
-
-//target query divs for extention embed
-const clipsdot = "div.Layout-sc-1xcs6mc-0.jkApnw"; //clips.twitch.tv selects div below and inserts above
-const slashvideos = "div.Layout-sc-1xcs6mc-0.haGrcr"; //twitch.tv/video/numbers selects div below and inserts above and //twitch.tv/moonmoon/clips
-const playertime = '.CoreText-sc-1txzju1-0.ckwzla[data-a-target="player-seekbar-current-time"]'; //.innertext of this selects the current vod time
-const expresstarget = 'div.Layout-sc-1xcs6mc-0.czRfnU.top-nav__prime'; //express vod target left of prime loot crown
-
-//on load start looping
-window.onload=() =>{ 
-   looper()};
-
-function looper() {
-//console.log("looper")
-    setTimeout(() => {
-        if(document.querySelector(expresstarget) != null && (document.getElementById('expressvod'))=== null){ //checks to see if element is there and then generates if it isn't
-                expressvod();}
-        if((document.querySelector(clipsdot) || document.querySelector(slashvideos) != null)){ //checks if any of the selectors are on page
-            if(document.getElementById('finderwrap') != null && (document.querySelector("#finderwrap").classList[0] != window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1))){
-                document.getElementById('finderwrap').remove()} //checks if box exists and if the box class does not match url it removes the box
-            if(document.getElementById('finderwrap') === null){
-                urlchecker();} //if the box does not exist check url and probably create one
-            else{looper();}
-        }
-        else{looper();}
-    }, 1500);
-}
-
-function urlchecker(){
-//console.log("checker");
-    if(window.location.pathname.includes("/clip/") || window.location.hostname === "clips.twitch.tv"){ //if it's a clip use clipsetup
-        clipsetup();
-        looper();
-    } else if(window.location.pathname.includes("/videos/") || window.location.pathname.includes("/video/")){ //if vod use vodsetup
-        vodsetup();
-        looper();
-    } else{
-        if(document.getElementById('finderwrap') != null){(document.getElementById('finderwrap')).remove()}; //if navigating somewhere else delete finder because edgecases
-        looper();
+//chrome 
+let guiObj = {
+    expressInputBox: null,
+    wrapper: null,
+        topDiv: null,
+            inputBox: null,
+            infoDiv: null,
+        botDiv: null,
+    data: {
+        url: null,
+        ctrlState: null,
+        timeStamp: null
     }
 }
 
-function expressvod(){
-    var target = document.querySelector(expresstarget); //building off point
-    var createxv = target.parentNode.insertBefore(document.createElement('input'), target); //inserts before
-    createxv.setAttribute("id", "expressvod");
-    createxv.setAttribute("placeholder", "Express Vod");
-    var inputbox = document.getElementById('expressvod');
-    inputbox.addEventListener("keydown", (event) =>{
+//target divs for extention embed. I am trying to use more permanent relative tags so the extension doens't break when twitch updates tags
+function expressTarget(){ //https://i.imgur.com/vJ1MMic.png highlighted is what I am selecting
+    console.log("expressTarget")
+    return document.querySelector('div.top-nav__prime');
+}
+
+function tvSlashTarget() { //target for .tv/videos/ and .tv/clips/ https://i.imgur.com/xEJQe0m.png
+    console.log("tvSlashTarget")
+    const qS = document.querySelector('div.metadata-layout__split-top'); 
+    return qS ? qS.parentNode : null; //if target exists return parentNode else return null
+}
+
+function playerTimeTarget(){ // https://i.imgur.com/t0sLphB.png
+    console.log("playerTimeTarget")
+    const qS = document.querySelector('[data-a-target="player-seekbar-current-time"]'); 
+    return qS ? qS.innerText : null; //returns the current vod time
+}
+
+function clipsDotTarget(){ //clips.twitch.tv target
+    console.log("clipsDotTarget")
+    const qS = document.querySelector('div.clips-watch div'); //selects the div inside of div.cips-watch
+    if (qS && qS.childNodes.length > 2) { // Check if qS exists and has 3 child nodes
+        return qS.childNodes[qS.childNodes.length - 1]; // Returns the last div inside of qS
+    } else { //extra checks required becuase I am selecting a target that loads first and the guiwrapper was loading above player occasionally.
+        return null; 
+    }
+}
+
+window.onload=() =>{ //on load start looping
+    expressCheck();
+    guiCheck();
+    looper();
+};
+
+function expressCheck(){
+    //console.log("expressCheck")
+    if(!guiObj.expressInputBox){ //if express doesn't exist try to generate it
+        expressVodSetup(expressTarget());
+    }
+}
+
+function expressVodSetup(target){
+    console.log("expressVodSetup");
+    if(!target){return}; //will just return if target isn't on page
+    guiObj.expressInputBox = target.parentNode.insertBefore(document.createElement('input'), target); //expressVodDiv inserts before target
+    guiObj.expressInputBox.setAttribute("id", "expressInputBox");
+    guiObj.expressInputBox.setAttribute("placeholder", "Express Vod");
+    guiObj.expressInputBox.setAttribute("spellcheck", "false") //turns off browser spell check red lines
+    initializeExpressListener();
+    guiObj.expressInputBox.addEventListener('input', handleInput);
+    guiObj.expressInputBox.addEventListener('keydown', inputQOL);
+}
+
+function guiCheck(){
+    //console.log("guiCheck");
+    if(guiObj.wrapper){ //if gui already on page checks if the url it was created under matches current url
+        if(guiObj.data.url != window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1)){
+            guiObj.wrapper.remove();
+            guiObj.wrapper = null;
+        }
+    }
+    if(!guiObj.wrapper){ //if gui doesn't exist on page: checks for building targets
+        if(tvSlashTarget()){
+            guiConstructor(tvSlashTarget())
+            dataConstructor()
+        };
+        if(clipsDotTarget()){ 
+            guiConstructor(clipsDotTarget())
+            dataConstructor()
+        };
+    }
+}
+
+function guiConstructor(target){
+    console.log("guiConstructor");
+    guiObj.data.url = window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1);
+    guiObj.wrapper = target.parentNode.insertBefore(document.createElement('div'), target)
+    guiObj.wrapper.setAttribute("id", "guiWrapper");
+
+    guiObj.topDiv = guiObj.wrapper.appendChild(document.createElement('div'))
+    guiObj.topDiv.setAttribute("id", "topDiv")
+
+    guiObj.inputBox = guiObj.topDiv.appendChild(document.createElement('input'))
+    guiObj.inputBox.setAttribute("id", "inputBox")
+    guiObj.inputBox.setAttribute("placeholder", "Channel Name")
+    guiObj.inputBox.setAttribute("autocomplete", "off") //turns off browser default autocomplete
+    guiObj.inputBox.setAttribute("spellcheck", "false") //turns off browser spell check red lines
+    initializeGuiListener();
+    guiObj.inputBox.addEventListener('input', handleInput);
+    guiObj.inputBox.addEventListener('keydown', inputQOL);
+
+    guiObj.infoDiv = guiObj.topDiv.appendChild(document.createElement('div'));
+    guiObj.infoDiv.setAttribute("id", "infoDiv");
+    infoControl("default");
+
+    guiObj.botDiv = guiObj.wrapper.appendChild(document.createElement('div'))
+    guiObj.botDiv.setAttribute("id", "botDiv")
+    guiObj.botDiv.addEventListener("contextmenu", function(event) {
+        event.preventDefault(); //this just prevents context menu from popping up if you misRclick around bubbles
+    });    
+    
+}
+
+function infoControl(option){
+    console.log("infoControl");
+    if(option === "default"){
+        guiObj.infoDiv.innerText =  "Enter name to search vods. Submit /settings for more information and shortcuts"
+    }
+    if(option === "novod"){
+        guiObj.infoDiv.innerHTML = "No VOD data; links generated may be inaccurate. More info in /settings"
+        guiObj.infoDiv.style.color = "#D68029"; //set text to orange as warning that it might not be accurate
+    }
+    if(option === "noUser"){
+        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>Twitch user not found. Try again.</span>"
+        flashRed(guiObj.inputBox);
+    }
+
+
+}
+function getSlug(){ //gets url slug
+    console.log("getSlug");
+    return window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1)
+}
+
+const dataConstructor = async () => {
+    console.log("dataConstructor");
+    if (window.location.pathname.includes("/clip/") || window.location.hostname === "clips.twitch.tv") {//clip data constructing
+        const apiClipObj = await apiFetch(clipQuery(getSlug()));
+        const name = apiClipObj.clip.broadcaster.login
+        apiUserVods(userVideosQuery(name, 100)) //try to find vod on load as a replacement for twitch's watch full vod button
+        console.log(apiClipObj);
+    if(apiClipObj.clip.videoOffsetSeconds){ //if clip has a vod attached get exact timestamp of clip by adding offset to vod start time.
+        guiObj.data.timeStamp = (Date.parse(apiClipObj.clip.video.createdAt)/1000)+apiClipObj.clip.videoOffsetSeconds
+    }
+    else{ //this gets the clip creation timestamp subtracts 30 seconds as a guess but can be way off if clip made from vod
+        infoControl("novod"); //warn that links might be inaccurate because no vod timestamp.
+        guiObj.data.timeStamp = (Date.parse(apiClipObj.clip.createdAt)/1000)-30
+    }
+
+    //vod data constructing
+    } else if (window.location.pathname.includes("/videos/") || window.location.pathname.includes("/video/")) {
+        const apiVodObj = await apiFetch(videoQuery(getSlug()));
+        if(apiVodObj.video.broadcastType === "ARCHIVE"){
+        guiObj.data.timeStamp = (Date.parse(apiVodObj.video.createdAt)/1000) //this sets the timestamp to the start time of the vod. Have to add the player time when user inputs
+        } else{
+            guiObj.inputBox.remove(); //disabling the GUI for highlights or uploads because it won't work
+            guiObj.infoDiv.innerText = "Not a VOD. LookingGlass disabled."
+            guiObj.botDiv.remove(); //leaving the wrapper so the gui doesn't regen
+        }
+    }
+}
+
+function getType(){
+    if (window.location.pathname.includes("/clip/") || window.location.hostname === "clips.twitch.tv") {
+        return "clip";
+    }else{
+        return "vod"
+    };
+}
+
+function looper() {
+    //console.log("looper");
+    setTimeout(() => {
+        expressCheck();
+        guiCheck();
+        looper();
+    }, 2000);
+}
+
+function initializeExpressListener(){
+    console.log("initializeExpressListener");
+    guiObj.expressInputBox.addEventListener("keydown", (event) =>{
         if(event.defaultPrevented){return;}
         switch(event.code) {
             case "Enter": case "NumpadEnter":
-                if(inputbox.value === "//"){apireturnexpress(userquery(window.location.pathname.split('/').filter(part => part !== '')[0],1)); //this gets channel name but not anything after
-                }else apireturnexpress(userquery(inputbox.value, 1))
-            inputbox.value = "";
+                if(guiObj.expressInputBox.value === ""){flashRed(guiObj.expressInputBox);return}
+                else if(guiObj.expressInputBox.value === "//"){
+                    apiReturnExpress(userVideosQuery(window.location.pathname.split('/').filter(part => part !== '')[0],1)); //this gets channel name but not anything after
+                }
+                else{apiReturnExpress(userVideosQuery(guiObj.expressInputBox.value, 1))}
+                guiObj.expressInputBox.value = "";
         }
     })
 }
 
-const apireturnexpress = async (input) => { //user input to get single video link back and open latest vod
-//console.log('apiexpress')
-    const a = await apifetch(input);
-    if(a.user == null){return;} //if no user exit
-    if(a.user.videos.edges.length === 0){return}; //if user exists but has no videos just exit
-    var link =("https://twitch.tv/videos/").concat(a.user.videos.edges[0].node.id);
-    window.open(link, "_blank");
-};
+function initializeGuiListener(){
+    console.log("initializeGuiListener");
+    guiObj.inputBox.addEventListener("keydown", (event) =>{
+        if(event.defaultPrevented){return;}
+        switch(event.code) {
+            case "Enter": case "NumpadEnter":
+            guiObj.data.ctrlState = event.getModifierState("Control") //true if control is held down during enter press false if isn't held down
+            const name = getInput()
+            if(!name){return;}
+            apiUserVods(userVideosQuery(name, 100));
+        }
+    })
+}
+
+function getInput(){
+    console.log("getInput");
+    let value = guiObj.inputBox.value
+    value = value.replace(/\W/g, '');//clears the input of non alphanumeric characters
+    if(value === ""){
+        flashRed(guiObj.inputBox);
+        return;
+    }
+    guiObj.inputBox.value = "";
+    return value;
+}
+
+function flashRed(targetBox) {
+    targetBox.classList.add('error');
+    setTimeout(() => {
+        targetBox.classList.remove('error');
+    }, 500);
+}
 
 //gql queries //moreinformation here https://supersonichub1.github.io/twitch-graphql-api/
-function videoquery(input){ //video id input gets video info back
+function videoQuery(input){ //video id input gets video info back
     const videoq =(
       `query {
         video(id: ${input}) {
@@ -79,13 +243,14 @@ function videoquery(input){ //video id input gets video info back
               broadcastType
               owner{
                 login
+                displayName
               }
         }
       }`);
-      return videoq
-}
+    return videoq
+};
 
-function userquery(input,ninput){ //twitch name input gets videos back ninput is number of videos you want
+function userVideosQuery(input,ninput){ //twitch name input gets videos back ninput is number of videos you want
   const userq =( 
     `query {
       user(login: "${input}") {
@@ -98,13 +263,14 @@ function userquery(input,ninput){ //twitch name input gets videos back ninput is
           }
           }
         }
+        displayName
       }
     }`);
     return userq;
-}
+};
 
-function clipquery(input){ //clip slug input and gets clip info back
-    const clipq =(
+function clipQuery(input){ //clip slug input and gets clip info back
+    const query =(
       `query {
         clip(slug: "${input}") {
             broadcaster{
@@ -119,11 +285,21 @@ function clipquery(input){ //clip slug input and gets clip info back
             }
         }
         }`)
-    return clipq;
+    return query;
 };
 
-// using gql api that is not supported by twitch but helix is pain
-const apifetch = async (input) => {
+function userStyleQuery(input){
+    const styleQuery =( 
+        `query {
+          user(login: "${input}") {
+            displayName
+          }
+        }`);
+    return styleQuery;
+}
+
+const apiFetch = async (input) => { // using gql api that is not supported by twitch but helix is pain
+    console.log("apiFetch");
     let gqlfetch = fetch(`https://gql.twitch.tv/gql`, {
       method: `POST`, 
       body: JSON.stringify({query: input}),
@@ -134,230 +310,219 @@ const apifetch = async (input) => {
       .then((data) => {
         return data.data;
       });
-  };
-
-const apireturnv = async (input) => { //video information api call
-    const a = await apifetch(input);
-    if(a.video === null){
-        document.getElementById('infodiv').innerText = "API didn't return vod info. If this problem persists contact dev->@SpaceshipCapt"
-        document.getElementById('infodiv').style.color = "#D68029";
-    }
-    if(a.video.broadcastType != "ARCHIVE" && a.video.broadcastType != null){
-        document.getElementById('infodiv').innerText = "This is not a vod. Looking Glass will not function properly."
-        document.getElementById('infodiv').style.color = "#D68029";
-        document.getElementById('finderwrap').setAttribute('data-time', 804643200); //this is just to have an old starttime to not confuse user
-        document.getElementById('finderwrap').setAttribute('data-name', a.video.owner.login);
-    }
-    else{
-        document.getElementById('finderwrap').setAttribute('data-time', Date.parse(a.video.createdAt)/1000); //start time of vod
-        document.getElementById('finderwrap').setAttribute('data-name', a.video.owner.login);
-    }
 };
 
-const apireturnc = async (input) => { //clip information api call
-    const a = await apifetch(input);
-    if(a.clip.video != null){
-        document.getElementById('finderwrap').setAttribute('data-time', (Date.parse(a.clip.video.createdAt)/1000)+a.clip.videoOffsetSeconds) //gets clips parent vod creation time and adds clip offset to get absolute time of clip
-        document.getElementById('finderwrap').setAttribute('data-name', a.clip.broadcaster.login);
-    }
-    else{
-        document.getElementById('finderwrap').setAttribute('data-time', (Date.parse(a.clip.createdAt)/1000)-30)
-        document.getElementById('finderwrap').setAttribute('data-name', a.clip.broadcaster.login);
-        document.getElementById('infodiv').innerText = "Clip doesn't have a vod; links generated can be wildly innaccurate if this clip wasn't created during a live broadcast."
-        document.getElementById('infodiv').style.color = "#D68029";
-    }
-};
-
-const apireturnu = async (input,name) => { //user input to get list of videos api call
-    const a = await apifetch(input);
-    if(a.user == null){document.getElementById('infodiv').innerText = "Invalid Twitch Name. Try Again."; return;}
-    if(a.user.videos.edges.length === 0){
-        document.getElementById('infodiv').innerText = `User has no vods.`;
-        document.getElementById('infodiv').style.color = "gray";
+const apiReturnExpress = async (input) => { //user input to get single video link back and open latest vod
+    console.log("apiReturnExpress");
+    const a = await apiFetch(input);
+    if(!a.user){ //if no user exit
+        flashRed(guiObj.expressInputBox);
+        return;
+    } 
+    //check if user is in autofill data base and if not add them here
+    if(a.user.videos.edges.length === 0){ //if user exists but has no videos just exit
+        flashRed(guiObj.expressInputBox)
         return
-    }
-    document.getElementById('infodiv').style.color = "white";
-    const varray = a.user.videos.edges;
-    arrayvods(varray,name)
+    }; 
+    const link =("https://twitch.tv/videos/").concat(a.user.videos.edges[0].node.id);
+    window.open(link, "_blank");
 };
 
-function boxcreate(qselector, type){
-//console.log('boxcreate')
-    var target = document.querySelector(qselector)
-    var cdiv = document.createElement('div') 
-    var created = target.parentNode.insertBefore(cdiv, target)
-    created.setAttribute("id", "finderwrap");
-    created.setAttribute("data-type", type)
-    created.setAttribute("data-time", "0")
-    created.setAttribute("data-offset", "0")
-    created.setAttribute("class",  window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1));
-//above creates a class with url pathname select this with document.querySelector("#finderwrap").classList[0]
-    var top = document.getElementById('finderwrap').appendChild(document.createElement('div'))
-    top.setAttribute("id", "topd")
-    var bot = document.getElementById('finderwrap').appendChild(document.createElement('div'))
-    bot.setAttribute("id", "botd")
-    bot.addEventListener("contextmenu", function(event) { //this just prevents context menu from popping up if you misRclick around bubbles
-        event.preventDefault();
-    });
-
-    var createind = document.getElementById('topd').appendChild(document.createElement('div'))
-    createind.setAttribute("id", "ind")
-
-    var createp = document.getElementById('ind').appendChild(document.createElement('input'))
-    createp.setAttribute("id", "targetid")
-    createp.setAttribute("placeholder", "Channel Name")
-    
-    var createinfod = document.getElementById('topd').appendChild(document.createElement('div'))
-    createinfod.setAttribute("id", "infodiv")
-    createinfod.innerText = "Enter name to search vods. Ctrl+Enter to instantly open links. Enter // as shortcut to search broadcaster's vods";
-
-//event listener for submitting names
-    var evel = document.getElementById('targetid')
-    evel.addEventListener("keydown", (event) =>{
-        if(event.defaultPrevented){return;}
-        switch(event.code) {
-            case "Enter": case "NumpadEnter":
-            ctrlstate = event.getModifierState("Control") //true if control is held down during enter press false if isn't held down
-            start(getinput());
-        }
-        })
-}
-
-function clipsetup(){
-//console.log('clipsetup');
-    const type = "clip";
-    if(window.location.hostname == "clips.twitch.tv"){//clips.twitch.tv/blahdbladhbladh view
-        boxcreate(clipsdot, type);
-        setTimeout(() => {
-            start(document.getElementById('finderwrap').getAttribute('data-name'));
-        }, 1500);
-    }; 
-    if(window.location.hostname == "www.twitch.tv"){ //channel clips view eg twitch.tv/moonmoon/clips/blahblahblah
-        boxcreate(slashvideos, type);
-    };
-    apireturnc(clipquery(window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1)));
-} 
-
-function vodsetup(){
-//console.log('vodsetup');
-    const type = "vod"
-    boxcreate(slashvideos, type);
-    apireturnv(videoquery(window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1)))
-}
-function start(rawname){
-//console.log('start')
-    if(rawname == null){return} //stops if name is null
-    if (document.getElementById('finderwrap').getAttribute('data-type') === "vod"){
-        document.getElementById('finderwrap').setAttribute('data-offset', cleanTime(document.body.querySelector(playertime).innerText)); //get seconds back
-        var namet = secondsCalc(0).concat(" "+rawname)
-    };
-    if (document.getElementById('finderwrap').getAttribute('data-type') === "clip"){var namet = rawname}
-    apireturnu(userquery(rawname, 100),rawname);
-}
-
-function getinput(){
-    var iname;
-    if(document.getElementById('targetid').value ==="//"){iname = document.getElementById('finderwrap').getAttribute('data-name')
-} else(iname =  (document.getElementById('targetid').value).replace(/\W/g, ''));//clears the input of non alphanumeric characters
-    if(iname === ""){document.getElementById('infodiv').innerText = "Empty input. Enter name.";return};
-    document.getElementById('targetid').value = ""; //clears input box
-    return iname;
-}
-
-function arrayvods(varray, name){
-//console.log('arrayvods')
-    var vodstart = [];
-    var vodend = [];
-    const time = parseInt(document.getElementById('finderwrap').getAttribute('data-time')); //these are here just for readability
-    const offset = parseInt(document.getElementById('finderwrap').getAttribute('data-offset'));
-    const stime = time+offset;
-    for(var i = 0; i < varray.length; i++){ //gets start and end times of inputed user's last 100 vods
-        var c = (Date.parse(new Date(varray[i].node.createdAt))/1000)
-        vodstart.push(c) //array of vod starts in seconds
-        vodend.push(c+(varray[i].node.lengthSeconds)) //adds vod  length to get end time
+const apiUserVods = async (input) => { //user information api call
+    console.log("apiUserVods");
+    const temp = await apiFetch(input);
+    if(!temp.user){infoControl("noUser");return}
+    if(temp.user.videos.edges.length < 1){ //if they have no vods exit
+        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>No VOD found.</span>";
+        guiObj.infoDiv.innerHTML +=` ${temp.user.displayName}  has 0 vods.`;
+        return;
     }
-    if(stime < vodstart[vodstart.length-1]){
-        var color = "gray";
-        document.getElementById('infodiv').innerText = `Searched ${varray.length} vod(s) and this is older than all of them. Rclick to remove bubble.`;
-        cl(link, color, name);
-        return 
-    }
-    else{
-        for(var i = 0;i < vodstart.length; i++){
-            if(stime > vodstart[i] && stime < vodend[i]){
-                var ts = secondsCalc(stime-vodstart[i])
-                const link = ("https://twitch.tv/videos/").concat((varray[i].node.id).concat("?t=")).concat(ts)
-                var color="green";
-                cl(link, color, name);
-                document.getElementById('infodiv').innerText = `${varray.length} vod(s) and this was found ${i+1} vod(s) ago! Rclick bubble for details.`
-                return 
-            }
-        }
-        var color="red";
-        var link = "novod";
-        cl(link, color, name);
-        document.getElementById('infodiv').innerText = `${varray.length} vod(s) and this timestamp wasn't found in any of them. Rclick to remove bubble.`;
-    }
-}
+    vodArraySearch(temp.user.videos.edges, temp.user.displayName);
+};
 
-function secondsCalc(d) { //input seconds get out 1h2m3s
-    var h = Math.floor(d / 3600);
-    var m = Math.floor(d % 3600 / 60);
-    var s = Math.floor(d % 3600 % 60);
-
-    var hDisplay = h > 0 ? h + "h" : "";
-    var mDisplay = m > 0 ? m + "m" : "";
-    var sDisplay = s > 0 ? s + "s" : "";
-    return hDisplay + mDisplay + sDisplay; 
-}
-
-function cleanTime(time){ //input example 00:46:12 takes raw vod time and cleans it to 46m12s
-    var timeA = time.split(":");
-    var seconds = parseInt(timeA[2]);
+function toSeconds(time){ //input example 00:46:12 and outputs it in seconds 2772
+    console.log("toSeconds");
+    const timeA = time.split(":");
+    let seconds = parseInt(timeA[2]);
     seconds += (parseInt(timeA[0])*60+parseInt(timeA[1]))*60
     return seconds;
 }
 
-function cl(link, color, name){ //create link
-    var ce = document.getElementById('botd').appendChild(document.createElement('div'))
-    ce.setAttribute("class","ce")
-        if(color === "green"){
-        re = /([^\=]+$)/; //regex to get time after last = for next line
-        ce.setAttribute("data-title", "@".concat(re.exec(link)[0])); //sets the target vod time to data-title for hover display
-        ce.setAttribute("data-title2", link);
-        ce.setAttribute("data-title3", secondsCalc(parseInt(document.getElementById('finderwrap').getAttribute('data-offset')))+"-->");
-        ce.addEventListener("click", function() {
-            window.open(ce.dataset.title2, "_blank")
-        })
-        ce.addEventListener("contextmenu", function(event) {
-            event.preventDefault();
-            ce.classList.toggle("active");
-            cn.classList.toggle("active");
-            close.classList.toggle("active");
-          });
-          
-        if(ctrlstate === true){window.open(link, "_blank");}
+function secondsCalc(d) { //input seconds get out 1h2m3s
+    console.log("secondsCalc");
+    const h = Math.floor(d / 3600);
+    const m = Math.floor(d % 3600 / 60);
+    const s = Math.floor(d % 3600 % 60);
+
+    const hDisplay = h + "h";
+    const mDisplay = m + "m";
+    const sDisplay = s + "s";
+
+    return hDisplay + mDisplay + sDisplay; 
+}
+
+function getPlayerSeconds(){
+    console.log("getPlayerSeconds");
+    let time = playerTimeTarget()
+    if(!time){
+        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>ERROR: Can't find player time.</span>";
+        return;
+    }
+    let timeSeconds = toSeconds(time);
+    return timeSeconds;
+}
+
+function convertToOrdinal(number) { //numbers to 1st 2nd 3rd etc
+    if (number % 100 >= 11 && number % 100 <= 13) {
+        return number + "th";
+    }
+    switch (number % 10) {
+        case 1:
+            return number + "st";
+        case 2:
+            return number + "nd";
+        case 3:
+            return number + "rd";
+        default:
+            return number + "th";
+    }
+}
+
+function constructLink(vodID,time){
+    console.log("constructLink");
+    const link = ("https://twitch.tv/videos/").concat((vodID).concat("?t=")).concat(time);
+    return link;
+}
+
+function vodArraySearch(array, name){
+    console.log("vodArraySearch");
+    let currentVodTime = playerTimeTarget() ? getPlayerSeconds() : 0; //if target exists gets the playertime in seconds else sets it to 0
+    let timeStamp = guiObj.data.timeStamp + currentVodTime;
+    if(timeStamp > (Date.parse(array[0].node.createdAt)/1000)+array[0].node.lengthSeconds){ //if timestamp is newer than the end of the first vod don't search
+        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>No VOD found.</span>";
+        guiObj.infoDiv.innerHTML +=` All ${array.length} of ${name}'s  VODs are older than this.`;
+        return;
+    }
+    if(timeStamp < Date.parse(array[array.length-1].node.createdAt)/1000){ //if timestamp is older than the start of the oldest vod don't search
+        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>No VOD found.</span>";
+        guiObj.infoDiv.innerHTML +=` This is older than all ${array.length} of ${name} VODs.`;
+        return;
+    }
+    for(let i = 0; i < array.length; i++){
+        let vodStart = (Date.parse(array[i].node.createdAt)/1000)
+        let vodEnd = (Date.parse(array[i].node.createdAt)/1000)+array[i].node.lengthSeconds
+        if(timeStamp < vodStart){continue;} //if timestamp is less than the start of a vod, check the next vod
+        if(timeStamp < vodEnd){ //timeStamp > vodStart is implied because of the previous if statement
+            const urlTime = secondsCalc(timeStamp-vodStart) //gets number of seconds into the vod and converts it
+            if(guiObj.data.ctrlState){window.open(constructLink(array[i].node.id, urlTime), "_blank")}
+            constructGreenBubble(constructLink(array[i].node.id, urlTime), name); //make green bubble
+            foundVodInfoControl(name, convertToOrdinal(i+1), array.length) //set info
+            break;
+        } else{
+            noVodInfoControl(name, i, array.length); //no vod found info
+            break;
         }
-    const cn = ce.appendChild(document.createElement('p'));
-    cn.setAttribute("class", "plink")
-    cn.innerText = name.toUpperCase();
-    const close = document.getElementById('botd').appendChild(document.createElement('div'))
-    close.setAttribute("class", "clink")
+    }
+}
+
+function foundVodInfoControl(name, placement, numberOfVods){
+    guiObj.infoDiv.innerHTML = `<span style='color: #FFD700;'>Found</span>`;
+    guiObj.infoDiv.innerHTML += ` in ${name}'s ${placement} VOD of ${numberOfVods}. Right-click bubble for details.`;
+}
+
+function noVodInfoControl(name, placement, numberOfVods){
+    const vodBefore = convertToOrdinal(placement)
+    const vodAfter = convertToOrdinal(placement+1)
+    guiObj.infoDiv.innerHTML = `<span style='color: #f03a17;'>No VOD found.</span>`;
+    guiObj.infoDiv.innerHTML +=` Searched ${numberOfVods} of ${name}'s  VODs and this occurred inbetween ${vodBefore} and ${vodAfter} VODs.`;
+}
+
+function constructGreenBubble(link, name) {
+    console.log("constructGreenBubble");
+
+    //building bubble
+    const bubble = guiObj.botDiv.appendChild(document.createElement('div'));
+    bubble.setAttribute("class", "bubble");
+
+    // Display channel name in bubble
+    const targetName = bubble.appendChild(document.createElement('p'));
+    targetName.setAttribute("class", "targetName");
+    targetName.innerText = name
+    //targetName.innerText = name.toUpperCase();
+
+    //for bubble rclick display data
+    const reg = /([^\=]+$)/; //after the last '='
+    bubble.setAttribute("data-targetTime", "@" + reg.exec(link)[0]); //Extract outgoing time from link
+    if(getType() === "vod"){ //if its a vod get player time for display
+    bubble.setAttribute("data-playerTime", secondsCalc(getPlayerSeconds()) + "➔");
+    }else{bubble.setAttribute("data-playerTime","➔")}; //clips = blank
+
+    // Open link in a new tab when clicked
+    bubble.addEventListener("click", function() { 
+        window.open(link, "_blank");
+    });
+
+    // Add close button
+    const close = guiObj.botDiv.appendChild(document.createElement('div')); 
+    close.setAttribute("class", "closeLink");
     close.innerText = "❌";
     close.addEventListener("click", function() {
-        if (close.classList.contains('active')){
-            ce.remove()+close.remove();
-            document.getElementById('infodiv').innerText = "Enter name to search vods. Ctrl+Enter to instantly open links. Enter // as shortcut to search broadcaster's vods";
-        }
-    })
-    if(color === "green"){(ce.style.background = "#05483F") && (ce.style.cursor='pointer')}; 
-    if(color === "red"){(ce.style.background = "#7F0423") && (ce.style.cursor='default')}; 
-    if(color === "gray"){(ce.style.background = "#505050") && (ce.style.cursor='default')};
-    if(color ==="red" || color ==="gray"){
-        ce.addEventListener("contextmenu", function(event) {
-            event.preventDefault();
-            ce.remove();
-            document.getElementById('infodiv').innerText = "Enter name to search vods. Ctrl+Enter to instantly open links. Enter // as shortcut to search broadcaster's vods";
-          });
+        bubble.remove();
+        close.remove();
+        infoControl("default")
+    });
+
+    // Toggle active state on right-click
+    bubble.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+        bubble.classList.toggle("active");
+        targetName.classList.toggle("active");
+        close.classList.toggle("active");
+    });
+}
+
+//wip auto complete
+//CLEAN NAMES TO LOWER CASE WHEN ADDING THEM TO DATABASE
+const suggestions = [ //FOR TESTING REMOVE THIS
+    "lirik",
+    "spaceshipcaptain",
+    "squeex",
+    "caedrel"
+];
+
+function autocomplete(input) {
+    console.log("autocomplete");
+    const inputValue = input.value.toLowerCase();
+    const matches = suggestions.find(suggestion => suggestion.startsWith(inputValue));
+    return matches;
+}
+
+// Function to handle user input
+function handleInput(event) {
+    console.log("handleInput");
+    const input = event.target;
+    const position = input.selectionStart;
+    if (!input.value) return;
+
+    const suggestion = autocomplete(input);
+
+    if (suggestion && event.inputType !== 'deleteContentBackward') {
+        const newValue = input.value.substring(0, position) + suggestion.substring(input.value.length);
+        input.value = newValue;
+        // Move cursor to the end of the inserted text
+        input.setSelectionRange(position, position + suggestion.length);
     }
+}
+
+function inputQOL(event){ //tab moves cursor to end of suggestion and you can delete everything with ctrl+backspace
+    const input = event.target;
+    if (event.key === "Tab") {
+        event.preventDefault(); // Prevent default Tab behavior
+        input.setSelectionRange(input.value.length, input.value.length); // Move cursor to the end
+        return;
+    }
+    if (event.key === 'Backspace' && event.ctrlKey) {
+        input.value = ""; //set input to blank
+        return;
+    } 
 }

@@ -3,43 +3,32 @@
     --lgyellow: #D68029;
     --lgred: #7F0423;
 */
+#expressInputBox{
+    box-sizing: border-box;
+    opacity: 50%;
+    background-color: transparent;
+    border-radius:6px;
+    color: var(--color-text-input, white); /*use twitch's css or white if doesn't exist*/
+    font-size:12px;
+    padding-left: 5px;
+    height: 50%;
+    width: 25%;
+    flex-grow: 0 !important;
+    flex-shrink: 0 !important;
+    flex-wrap: nowrap !important;
+    transition: border-color .75s;
+}
 
-#finderWrap {
+#expressInputBox:focus{
+    outline: none; /* Remove default focus outline */
+    opacity: 100%;
+}
+
+#guiWrapper{
     margin-top: 5px;
 }
 
-#targetid {
-    box-sizing: border-box;
-    opacity: 50%;
-    background-color: #18181b;
-    border-radius:6px;
-    color: #efeff1;
-    font-size:18px;
-    padding-left: 5px;
-    height: 100%;
-    width: 12%;
-}
-
-#ind {
-    display: inline;
-}
-
-#infodiv{
-    padding-left: 10px;
-    display: inline;
-    text-align: left;
-    font-size: 14px;
-    font-weight: bold;
-    font-family: 'Roboto', sans-serif;
-}
-
-#submitb {
-    width: 20px;
-    display: inline;
-    margin-left: 5px;
-}
-
-#topd {
+#topDiv{
     padding: 5px;
     padding-top: 1rem;
     max-height: initial;
@@ -47,9 +36,42 @@
     width: 100%;
     margin: 0;
     box-sizing: border-box;
+    font-weight: 600 !important;
+    font-family: 'Roboto', sans-serif;
 }
 
-#botd {
+#inputBox{
+    box-sizing: border-box;
+    padding-left: 5px;
+    border-radius:6px;
+    opacity: 50%;
+    height: 100%;
+    width: 12%;
+    transition: border-color .75s;
+    background-color: transparent;
+    color: var(--color-text-input, white); /*use twitch's css or white if doesn't exist*/
+    font-size:17px;
+}
+
+#inputBox:focus{
+    outline: none;
+    opacity: 100%;
+}
+
+.error {
+    border-color: #f03a17;
+    transition: border-color .5s;
+}
+
+#infoDiv{
+    padding-left: 10px;
+    display: inline;
+    text-align: left;
+    font-size: 14px;
+    color: white;
+}
+
+#botDiv{
     display: flex;
     flex-wrap: wrap;
     padding: 5px;
@@ -59,8 +81,9 @@
     position: relative;
 }
 
-.ce {
+.bubble{
     display: inline-block;
+    background-color: #05483F;
     height: 100%;
     margin-right: .5%;
     border-radius:6px;
@@ -72,65 +95,47 @@
     cursor: pointer;
     text-align: center;
 }
-.ce[data-title]:after{
-    content: attr(data-title);
+.bubble[data-targetTime]:after{
+    content: attr(data-targetTime);
     font-family: 'Roboto', sans-serif;
     font-size: 0px;
     font-weight: bold;
     transition: .15s;
-    color: #efeff1;
+    color: #FFD700;
 }
 
-.ce[data-title].active:after{
+.bubble[data-targetTime].active:after{
     font-size: 15px;
   }
 
-.ce[data-title3]:before{
-    content: attr(data-title3);
+.bubble[data-playerTime]:before{
+    content: attr(data-playerTime);
     font-family: 'Roboto', sans-serif;
-    color: #efeff1;
+    color: #FFD700;
     font-size: 0px;
     font-weight: bold;
     transition: .15s;
 }
-.ce[data-title3].active:before {
+.bubble[data-playerTime].active:before {
     font-size: 15px;
 }
 
-.plink {
-    color: #efeff1;
+.targetName{
+    color: white;
     font-size: 17px;
     font-weight: bold;
     font-family: 'Roboto', sans-serif;
     overflow: hidden;
 }
-.plink.active{
-    color: #ff6700;
-}
 
-.clink{
-    font-size:0rem;
+.closeLink{
+    font-size: 0rem;
     position: relative;
     left: -10px;
+    margin-bottom: .45%;
 }
-.clink.active{
+.closeLink.active{
     font-size: 1.75rem;
     cursor: pointer;
     display: inline-block;
-    margin-bottom: .5%;
-}
-
-#expressvod {
-    box-sizing: border-box;
-    opacity: 50%;
-    background-color: #18181b;
-    border-radius:6px;
-    color: #efeff1;
-    font-size:12px;
-    padding-left: 5px;
-    height: 50%;
-    width: 25%;
-    flex-grow: 0 !important;
-    flex-shrink: 0 !important;
-    flex-wrap: nowrap !important;
 }
