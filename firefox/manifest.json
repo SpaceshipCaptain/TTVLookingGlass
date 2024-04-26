@@ -9,7 +9,8 @@
     "128": "icons/128.png"
   },
     "permissions": [
-      "<all_urls>"
+      "<all_urls>",
+      "storage"
   ],
   "content_scripts": [
     {

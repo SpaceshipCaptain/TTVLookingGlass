@@ -1,5 +1,5 @@
 console.log('TTVLookingGlass Extension Initiated. Created by @SpaceshipCapt')
-//chrome 
+//firefox
 let guiObj = {
     expressInputBox: null,
     wrapper: null,
@@ -8,6 +8,7 @@ let guiObj = {
             infoDiv: null,
         botDiv: null,
     data: {
+        suggestions: {},
         url: null,
         ctrlState: null,
         timeStamp: null
@@ -42,7 +43,10 @@ function clipsDotTarget(){ //clips.twitch.tv target
     }
 }
 
-window.onload=() =>{ //on load start looping
+window.onload = async () => {
+    // Load names from local storage
+    guiObj.data.suggestions = await loadNames();
+     //on load start looping
     expressCheck();
     guiCheck();
     looper();
@@ -131,7 +135,6 @@ function infoControl(option){
         flashRed(guiObj.inputBox);
     }
 
-
 }
 function getSlug(){ //gets url slug
     console.log("getSlug");
@@ -190,8 +193,10 @@ function initializeExpressListener(){
         switch(event.code) {
             case "Enter": case "NumpadEnter":
                 if(guiObj.expressInputBox.value === ""){flashRed(guiObj.expressInputBox);return}
-                else if(guiObj.expressInputBox.value === "//"){
-                    apiReturnExpress(userVideosQuery(window.location.pathname.split('/').filter(part => part !== '')[0],1)); //this gets channel name but not anything after
+                else if (guiObj.expressInputBox.value.startsWith('-')) {
+                    nameRemover(guiObj.expressInputBox.value);
+                    guiObj.expressInputBox.value = "";
+                    return;
                 }
                 else{apiReturnExpress(userVideosQuery(guiObj.expressInputBox.value, 1))}
                 guiObj.expressInputBox.value = "";
@@ -216,13 +221,28 @@ function initializeGuiListener(){
 function getInput(){
     console.log("getInput");
     let value = guiObj.inputBox.value
+    if (value.startsWith('-')) {
+        nameRemover(value);
+        guiObj.inputBox.value = "";
+        return;
+    }
     value = value.replace(/\W/g, '');//clears the input of non alphanumeric characters
     if(value === ""){
         flashRed(guiObj.inputBox);
+        guiObj.inputBox.value = "";
         return;
     }
     guiObj.inputBox.value = "";
     return value;
+}
+function nameRemover(value){
+    const name = value.substring(1); // Remove the '-' prefix
+    if (name === 'clearallsuggestions') {
+        clearAllEntries();
+    } else {
+        removeName(name);
+    }
+    return;
 }
 
 function flashRed(targetBox) {
@@ -263,6 +283,7 @@ function userVideosQuery(input,ninput){ //twitch name input gets videos back nin
           }
           }
         }
+        login
         displayName
       }
     }`);
@@ -288,16 +309,6 @@ function clipQuery(input){ //clip slug input and gets clip info back
     return query;
 };
 
-function userStyleQuery(input){
-    const styleQuery =( 
-        `query {
-          user(login: "${input}") {
-            displayName
-          }
-        }`);
-    return styleQuery;
-}
-
 const apiFetch = async (input) => { // using gql api that is not supported by twitch but helix is pain
     console.log("apiFetch");
     let gqlfetch = fetch(`https://gql.twitch.tv/gql`, {
@@ -319,7 +330,7 @@ const apiReturnExpress = async (input) => { //user input to get single video lin
         flashRed(guiObj.expressInputBox);
         return;
     } 
-    //check if user is in autofill data base and if not add them here
+    saveName(a.user.login); //save name for suggestions only if it's a valid twitch name
     if(a.user.videos.edges.length === 0){ //if user exists but has no videos just exit
         flashRed(guiObj.expressInputBox)
         return
@@ -332,6 +343,7 @@ const apiUserVods = async (input) => { //user information api call
     console.log("apiUserVods");
     const temp = await apiFetch(input);
     if(!temp.user){infoControl("noUser");return}
+    saveName(temp.user.login); //if it's a valid twitch name save name for suggestions
     if(temp.user.videos.edges.length < 1){ //if they have no vods exit
         guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>No VOD found.</span>";
         guiObj.infoDiv.innerHTML +=` ${temp.user.displayName}  has 0 vods.`;
@@ -340,25 +352,17 @@ const apiUserVods = async (input) => { //user information api call
     vodArraySearch(temp.user.videos.edges, temp.user.displayName);
 };
 
-function toSeconds(time){ //input example 00:46:12 and outputs it in seconds 2772
-    console.log("toSeconds");
-    const timeA = time.split(":");
-    let seconds = parseInt(timeA[2]);
-    seconds += (parseInt(timeA[0])*60+parseInt(timeA[1]))*60
-    return seconds;
+function toSeconds(time) { //Input: "00:46:12" -> Output: 2772
+    const [hours = 0, minutes = 0, seconds = 0] = time.split(':').reverse().map(Number);
+    return (hours * 3600) + (minutes * 60) + seconds;
 }
 
-function secondsCalc(d) { //input seconds get out 1h2m3s
-    console.log("secondsCalc");
-    const h = Math.floor(d / 3600);
-    const m = Math.floor(d % 3600 / 60);
-    const s = Math.floor(d % 3600 % 60);
+function secondsCalc(totalSeconds) {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
 
-    const hDisplay = h + "h";
-    const mDisplay = m + "m";
-    const sDisplay = s + "s";
-
-    return hDisplay + mDisplay + sDisplay; 
+    return `${hours}h${minutes}m${seconds}s`;
 }
 
 function getPlayerSeconds(){
@@ -481,20 +485,53 @@ function constructGreenBubble(link, name) {
     });
 }
 
-//wip auto complete
-//CLEAN NAMES TO LOWER CASE WHEN ADDING THEM TO DATABASE
-const suggestions = [ //FOR TESTING REMOVE THIS
-    "lirik",
-    "spaceshipcaptain",
-    "squeex",
-    "caedrel"
-];
+// Save a new name to storage
+function saveName(name) {
+    const lowerCaseName = name.toLowerCase()
+    guiObj.data.suggestions[lowerCaseName] = (guiObj.data.suggestions[lowerCaseName] || 0) + 1;
+    const suggestions = guiObj.data.suggestions;
+    browser.storage.local.set({ names: suggestions }, () => {});
+}
+
+// Load names from storage
+function loadNames() {
+    return new Promise((resolve) => {
+      browser.storage.local.get(['names'], (data) => {
+        const names = data.names || {};
+        resolve(names);
+      });
+    });
+}
+
+//clear a name from suggestions list
+function removeName(name) {
+    const lowercaseName = name.toLowerCase();
+    if (guiObj.data.suggestions[lowercaseName]) {
+      delete guiObj.data.suggestions[lowercaseName];
+      const suggestions = guiObj.data.suggestions;
+      browser.storage.local.set({ names: suggestions }, () => {
+        guiObj.infoDiv.innerHTML = `${name} cleared from suggestions.`;
+        guiObj.inputBox.value = "";
+      });
+    }
+}
+
+//clear all suggestions
+function clearAllEntries() {
+    guiObj.data.suggestions = {};
+    browser.storage.local.set({ names: {} }, () => {
+        guiObj.infoDiv.innerHTML = "All suggestions cleared.";
+    });
+}
 
 function autocomplete(input) {
-    console.log("autocomplete");
     const inputValue = input.value.toLowerCase();
-    const matches = suggestions.find(suggestion => suggestion.startsWith(inputValue));
-    return matches;
+    const suggestions = Object.entries(guiObj.data.suggestions)
+      .filter(([name]) => name.startsWith(inputValue))
+      .sort((a, b) => b[1] - a[1]) // Sort by frequency in descending order
+      .map(([name]) => name); // Extract just the name
+  
+    return suggestions[0] || ''; // Return the first suggestion or an empty string
 }
 
 // Function to handle user input
