@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extension Options</title>
+    <link rel="stylesheet" href="options.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+    <header>
+        <img id ="logo" src="/icons/128.png">
+        <h1>TTV Looking Glass Options</h1>
+    </header>
+    <main>
+        <div id="linksDiv">
+            <div id="donationDiv">
+                <a href="https://www.paypal.com/donate/?hosted_button_id=LB5Y7J2XQF9VU" id="donoLink" target="_blank">
+                    Paypal Donation Link<br>
+                </a>
+                <span id="donoText">-If you are feeling generous and have found the extension useful. Thanks!</span>
+            </div>
+            <div id="infoLinks">
+                <a href="https://github.com/SpaceshipCaptain/TTVLookingGlass/" class="links" target="_blank">Github</a><br>
+                <a href="https://chromewebstore.google.com/detail/ttv-looking-glass/phikemnogmdhgadokdnahneeihokkkcf?hl=en&authuser=0" class="links" target="_blank">Chrome Store</a><br>
+                <a href="https://addons.mozilla.org/en-US/firefox/addon/ttv-looking-glass/" class="links" target="_blank">Firefox Store</a><br>
+            </div>
+        </div>
+        <h3 id="optionsDiv">Options</h3>
+        <ul>
+            <li>
+                <label class="switch" for="instantOpenCheckbox">
+                    <input type="checkbox" id="instantOpenCheckbox"/>
+                    <div class="slider round"></div>
+                </label>
+                Instantly open all found links so you don't have to click bubbles. <br>
+            </li>
+            <li>
+                <label class="switch" for="createClipLinkCheckbox">
+                    <input type="checkbox" id="createClipLinkCheckbox"/>
+                    <div class="slider round"></div>
+                </label>
+                    Create a link to a clip's vod on load (clips without vod data already try to do this)
+            </li>
+            <li>
+                <label class="switch" for="disableAutocompleteCheckbox">
+                    <input type="checkbox" id="disableAutocompleteCheckbox"/>
+                    <div class="slider round"></div>
+                </label>
+                    Disable autocomplete
+            </li>
+        </ul>
+        <p id="subNote">- Submitting with Ctrl+Enter will always instantly open a found link.<br>
+            - /clear will remove all generated green link bubbles<br>
+            - You may have to reload open pages for option changes to take effect
+        </p>
+    </main>
+    <h3 id="auto-complete">Auto-complete Info</h3>
+    <ol>
+        <li>only adds a name to the suggestions list if it's a valid twich user</li>
+        <li>suggestions are ranked by input frequency not purely alphabetically.</li>
+        <li>"-name" will remove that name from auto-complete list. example: -spaceshipcaptain</li>
+        <li>"/clearAllNames" If you want to clear all names from auto-complete list.</li>
+        <li>Name list is stored locally in your browser. No data is logged to a server.</li>
+    </ol>
+    <h3 id="warning">Why clips have warning if they don't have a vod:</h3>
+        <p>
+        LookingGlass runs on timestamps. It grabs the current timestamp and then scans through a user's VODs to find that time. 
+        But if a clip doesn't have a VOD attached, LG can't nail down the exact timestamp because the VOD start time is the only precise reference point. 
+        So, LG uses the time of when the clip was created and subtracts 30 seconds as a rough estimation. This works around 98% of the time, but there are two main failure modes:<br>
+        1. If a mobile user creates a clip while live delayed by 10 minutes and the VOD never gets published, all the links generated will be 10 minutes behind.<br>
+        2. If someone creates a clip from a VOD hours after the event happened, and then that VOD later gets deleted, the links will be hours off from the intended timestamp.
+        </p>
+    <h3 id="problems">Problems or suggestions?</h3>
+    LookingGlass should now be more reliable than before, but it can still break. 
+    It uses Twitch's tags to embed itself into the page, so the extension may fail to load if Twitch modifies the tags it's trying to embed on. 
+    If you notice a problem, you can check the GitHub issues tab to see if it has been reported yet, and you can open a new issue if not. 
+    If you prefer not to use GitHub, it's totally fine to email me directly. You can find my email on both web store pages. 
+    Links to the GitHub repository and web stores are at the top right of this page. <br><br>
+    Don't hesitate to email any and all feedback - Positive/negative/ideas/concerns send em over because I rarely hear from people, 
+    and it's hard to get a sense of how people are generally liking the extension. I always appreciate getting feedback! Thanks!
+<footer>SpaceshipCaptain</footer>
+<script src="options.js"></script>
+</body>
+</html>

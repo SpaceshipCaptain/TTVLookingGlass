@@ -1,5 +1,5 @@
-console.log('TTVLookingGlass Extension Initiated. Created by @SpaceshipCapt')
-//firefox
+console.log("TTVLookingGlass Extension Initiated. Created by SpaceshipCaptain");
+//Firefox
 let guiObj = {
     expressInputBox: null,
     wrapper: null,
@@ -7,178 +7,275 @@ let guiObj = {
             inputBox: null,
             infoDiv: null,
         botDiv: null,
-    data: {
-        suggestions: {},
-        url: null,
-        ctrlState: null,
-        timeStamp: null
+};
+
+let lgData = {
+    suggestions: {},
+    noVodData: null,
+    ctrlState: null,
+    url: null,
+    timeStamp: null,
+    options: {}
+};
+
+//loads options
+browser.storage.local.get(["options"], (data) => {
+    if(data.options){
+      lgData.options = data.options;
+    }
+    else{//defaults to false if no options
+      lgData.options = {
+        instantOpen: false,
+        createClipLink: false,
+        disableAutocomplete: false
+      };
+    }
+});
+
+//Loads names for suggestions
+browser.storage.local.get(["names"], (data) => {
+    const names = data.names || {};
+    lgData.suggestions = names;
+});
+
+//targets the prime loot crown on navbar
+function expressCheck(){
+    if(guiObj.expressInputBox){return;}//if it already exists
+    if(window.location.hostname === "clips.twitch.tv"){return;}
+    const eVTarget = document.querySelector("div.top-nav__prime");
+    if(eVTarget){//if target exists create input
+        expressVodSetup(eVTarget);
     }
 }
 
-//target divs for extention embed. I am trying to use more permanent relative tags so the extension doens't break when twitch updates tags
-function expressTarget(){ //https://i.imgur.com/vJ1MMic.png highlighted is what I am selecting
-    console.log("expressTarget")
-    return document.querySelector('div.top-nav__prime');
-}
-
-function tvSlashTarget() { //target for .tv/videos/ and .tv/clips/ https://i.imgur.com/xEJQe0m.png
-    console.log("tvSlashTarget")
-    const qS = document.querySelector('div.metadata-layout__split-top'); 
-    return qS ? qS.parentNode : null; //if target exists return parentNode else return null
-}
-
-function playerTimeTarget(){ // https://i.imgur.com/t0sLphB.png
-    console.log("playerTimeTarget")
-    const qS = document.querySelector('[data-a-target="player-seekbar-current-time"]'); 
-    return qS ? qS.innerText : null; //returns the current vod time
-}
-
-function clipsDotTarget(){ //clips.twitch.tv target
-    console.log("clipsDotTarget")
-    const qS = document.querySelector('div.clips-watch div'); //selects the div inside of div.cips-watch
-    if (qS && qS.childNodes.length > 2) { // Check if qS exists and has 3 child nodes
-        return qS.childNodes[qS.childNodes.length - 1]; // Returns the last div inside of qS
-    } else { //extra checks required becuase I am selecting a target that loads first and the guiwrapper was loading above player occasionally.
-        return null; 
+//This has backup targets if the main embed target fails.
+function underPlayerTarget() {
+    let guiTarget = document.querySelector("div.metadata-layout__split-top");
+    if(guiTarget){return guiTarget.parentNode;}
+    if(window.location.hostname === "clips.twitch.tv"){
+        //this one should be removed in the future if twitch settles on the new design
+        guiTarget = document.querySelector("div.clips-watch");
+        if(guiTarget && guiTarget.firstChild.childNodes.length > 2){return guiTarget.firstChild.lastChild;}
+        //backup clip target for new design
+        guiTarget = document.querySelector("div.clips-player");
+        if(guiTarget){return guiTarget.childNodes[1];}
+    }else{
+        guiTarget = document.getElementById("live-channel-stream-information");
+        if(guiTarget){return guiTarget.childNodes[0].childNodes[0];}
     }
 }
 
-window.onload = async () => {
-    // Load names from local storage
-    guiObj.data.suggestions = await loadNames();
-     //on load start looping
+//called to get vod player time
+function getPlayerSeconds(){
+    let time = document.querySelector("[data-a-target='player-seekbar-current-time']");
+    if(!time){
+        infoControl("noPlayerTime");
+        return;
+    }
+    let timeSeconds = toSeconds(time.innerText);
+    return timeSeconds;
+}
+
+window.onload=() =>{ 
     expressCheck();
     guiCheck();
     looper();
 };
 
-function expressCheck(){
-    //console.log("expressCheck")
-    if(!guiObj.expressInputBox){ //if express doesn't exist try to generate it
-        expressVodSetup(expressTarget());
-    }
-}
-
 function expressVodSetup(target){
-    console.log("expressVodSetup");
-    if(!target){return}; //will just return if target isn't on page
-    guiObj.expressInputBox = target.parentNode.insertBefore(document.createElement('input'), target); //expressVodDiv inserts before target
+    guiObj.expressInputBox = target.parentNode.insertBefore(document.createElement("input"), target);
     guiObj.expressInputBox.setAttribute("id", "expressInputBox");
+    guiObj.expressInputBox.setAttribute("class", "inputBox");
     guiObj.expressInputBox.setAttribute("placeholder", "Express Vod");
-    guiObj.expressInputBox.setAttribute("spellcheck", "false") //turns off browser spell check red lines
-    initializeExpressListener();
-    guiObj.expressInputBox.addEventListener('input', handleInput);
-    guiObj.expressInputBox.addEventListener('keydown', inputQOL);
+    guiObj.expressInputBox.setAttribute("spellcheck", "false");//no red lines
+    guiObj.expressInputBox.setAttribute("autocomplete", "off");//no browser suggestions
+    guiObj.expressInputBox.addEventListener("keydown", expressGo);
+    if(!lgData.options.disableAutocomplete){//auto-complete option
+        guiObj.expressInputBox.addEventListener("input", handleInput);
+        guiObj.expressInputBox.addEventListener("keydown", inputQOL);
+    }
 }
 
 function guiCheck(){
-    //console.log("guiCheck");
-    if(guiObj.wrapper){ //if gui already on page checks if the url it was created under matches current url
-        if(guiObj.data.url != window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1)){
-            guiObj.wrapper.remove();
-            guiObj.wrapper = null;
+    //if gui already exists check if url changed.
+    if(guiObj.wrapper){
+        if(lgData.url === window.location.pathname){
+            return;
         }
+        guiObj.wrapper.remove();
+        guiObj.wrapper = null;
+        lgData.noVodData = null; //edgecase
     }
-    if(!guiObj.wrapper){ //if gui doesn't exist on page: checks for building targets
-        if(tvSlashTarget()){
-            guiConstructor(tvSlashTarget())
-            dataConstructor()
-        };
-        if(clipsDotTarget()){ 
-            guiConstructor(clipsDotTarget())
-            dataConstructor()
-        };
+    if(!guiObj.wrapper){ //if gui doesn't exist: checks for building targets
+        const url = window.location.pathname;
+        if(url.includes("/videos/") || url.includes("/clip/") || window.location.hostname === "clips.twitch.tv"){
+        const guiTarget = underPlayerTarget();
+            if(guiTarget){
+                guiConstructor(guiTarget);
+                dataConstructor();
+            }
+        }
     }
 }
 
 function guiConstructor(target){
-    console.log("guiConstructor");
-    guiObj.data.url = window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1);
-    guiObj.wrapper = target.parentNode.insertBefore(document.createElement('div'), target)
+    lgData.url = window.location.pathname;
+    guiObj.wrapper = target.parentNode.insertBefore(document.createElement("div"), target);
     guiObj.wrapper.setAttribute("id", "guiWrapper");
 
-    guiObj.topDiv = guiObj.wrapper.appendChild(document.createElement('div'))
-    guiObj.topDiv.setAttribute("id", "topDiv")
+    guiObj.topDiv = guiObj.wrapper.appendChild(document.createElement("div"));
+    guiObj.topDiv.setAttribute("id", "topDiv");
 
-    guiObj.inputBox = guiObj.topDiv.appendChild(document.createElement('input'))
-    guiObj.inputBox.setAttribute("id", "inputBox")
-    guiObj.inputBox.setAttribute("placeholder", "Channel Name")
-    guiObj.inputBox.setAttribute("autocomplete", "off") //turns off browser default autocomplete
-    guiObj.inputBox.setAttribute("spellcheck", "false") //turns off browser spell check red lines
-    initializeGuiListener();
-    guiObj.inputBox.addEventListener('input', handleInput);
-    guiObj.inputBox.addEventListener('keydown', inputQOL);
+    guiObj.inputBox = guiObj.topDiv.appendChild(document.createElement("input"));
+    guiObj.inputBox.setAttribute("id", "mainInputBox");
+    guiObj.inputBox.setAttribute("class", "inputBox");
+    guiObj.inputBox.setAttribute("placeholder", "Search Name");
+    guiObj.inputBox.setAttribute("autocomplete", "off");
+    guiObj.inputBox.setAttribute("spellcheck", "false");
+    guiObj.inputBox.addEventListener("keydown", mainGo);
+    if(!lgData.options.disableAutocomplete){
+    guiObj.inputBox.addEventListener("input", handleInput);
+    guiObj.inputBox.addEventListener("keydown", inputQOL);
+    }
 
-    guiObj.infoDiv = guiObj.topDiv.appendChild(document.createElement('div'));
+    guiObj.infoDiv = guiObj.topDiv.appendChild(document.createElement("div"));
     guiObj.infoDiv.setAttribute("id", "infoDiv");
     infoControl("default");
 
-    guiObj.botDiv = guiObj.wrapper.appendChild(document.createElement('div'))
-    guiObj.botDiv.setAttribute("id", "botDiv")
+    guiObj.botDiv = guiObj.wrapper.appendChild(document.createElement("div"))
+    guiObj.botDiv.setAttribute("id", "botDiv");
+    //this just prevents context menu from popping up if you misclick
     guiObj.botDiv.addEventListener("contextmenu", function(event) {
-        event.preventDefault(); //this just prevents context menu from popping up if you misRclick around bubbles
-    });    
-    
+        event.preventDefault();
+    });
 }
 
-function infoControl(option){
-    console.log("infoControl");
-    if(option === "default"){
-        guiObj.infoDiv.innerText =  "Enter name to search vods. Submit /settings for more information and shortcuts"
-    }
-    if(option === "novod"){
-        guiObj.infoDiv.innerHTML = "No VOD data; links generated may be inaccurate. More info in /settings"
-        guiObj.infoDiv.style.color = "#D68029"; //set text to orange as warning that it might not be accurate
-    }
-    if(option === "noUser"){
-        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>Twitch user not found. Try again.</span>"
-        flashRed(guiObj.inputBox);
-    }
+//colors
+const red = "#f03a17";//not found
+const green = "#72F176";//found link
+const yellow = "#F4D35E";//commands
 
+//to stop multiple inputs overlapping the timer
+let infoResetTimeout;
+
+function infoControl(textCode, name, nVods, placement){
+    const info = guiObj.infoDiv;
+    info.style.opacity = "0"; //fade out current info with css transition
+    clearTimeout(infoResetTimeout);  //this is a js engine function
+    setTimeout(() => { // Wait 200ms for fade out
+        if(textCode === "default"){
+            if(!lgData.noVodData){
+                info.innerText =  "Enter name to search vods. Submit /options for settings and info.";
+            }else{
+                info.innerHTML = "No VOD data. Links generated may be inaccurate. Submit /options for more info.";
+                info.classList.add("infoWarning");//set text to orange as warning that it might not be accurate
+            }
+            info.style.opacity = "1"; //need to set text to visible
+            return; //skips reset info if setting to default
+        }
+        if(textCode === "foundVod"){
+            const place = convertToOrdinal(placement);
+            info.innerHTML = `<span style="color: ${green}">${name}</span>`;
+            info.innerHTML += ` Found in ${place} VOD of ${nVods}. Right-click bubble for details.`;
+        }
+        else if(textCode === "noFoundVod"){
+            const vodBefore = convertToOrdinal(placement);
+            const vodAfter = convertToOrdinal(placement+1);
+            info.innerHTML = `<span style="color: ${red};">${name}</span>`;
+            info.innerHTML +=` Not found. Searched ${nVods} VODs and this occurred in between ${vodBefore} and ${vodAfter} VODs.`;
+        }
+        else if(textCode === "oldVods"){
+            info.innerHTML = `<span style="color: ${red};">${name}</span>`;
+            info.innerHTML +=` All ${nVods} VODs are older than this.`;
+        }
+        else if(textCode === "olderThanVods"){
+            info.innerHTML = `<span style="color: ${red};">${name}</span>`;
+            info.innerHTML +=` This is older than all ${nVods} VODs.`;
+        }
+        //commands
+        else if(textCode === "removedName"){
+            info.innerHTML = `<span style="color: ${yellow};">${name}</span>`;
+            info.innerHTML += ` removed from suggestions.`;
+        }
+        else if(textCode === "removedAllNames"){
+            info.innerHTML = `<span style="color: ${yellow};">All name suggestions have been cleared.</span>`;
+        }
+        else if(textCode === "clear"){
+            info.innerHTML = `<span style="color: ${yellow};">Cleared all links.</span>`;
+        }
+        //error codes
+        else if(textCode === "noUser"){
+            info.innerHTML = `<span style="color: ${red};">Twitch user not found. Try again.</span>`;
+            flashRed(guiObj.inputBox);
+        }
+        else if(textCode === "zeroVods"){
+            info.innerHTML = `<span style="color: ${red};">${name}</span>`;
+            info.innerHTML +=" has 0 vods.";
+        }
+        else if(textCode === "noPlayerTime"){
+            info.innerHTML = `<span style='color: ${red};'>ERROR: Can't find player time. Might be an ad running? Contact Dev if error persists.</span>`;
+        }
+        else if(textCode === "notInSuggestions"){
+            info.innerHTML = `<span style='color: ${red};'>${name}</span>`;
+            info.innerHTML +=" was not in suggestions list.";
+        }
+        else if(textCode === "notVod"){
+            info.innerHTML = `<span style='color: ${red};'>Not a VOD: LookingGlass disabled.</span>`;
+            guiObj.inputBox.remove(); //disabling the GUI for highlights/uploads
+            guiObj.botDiv.remove(); //leaving the wrapper so the gui doesn't regen
+            info.style.opacity = "1"; //because of return
+            setTimeout(() => {guiObj.topDiv.remove()}, 4500);
+            return;
+        }
+        info.style.opacity = "1"; // Fade in new info
+        infoResetTimeout = setTimeout(resetInfo, 8000);
+    }, 200);
 }
+
+function resetInfo(){
+        infoControl("default");
+        infoResetTimeout = null;
+}
+
 function getSlug(){ //gets url slug
-    console.log("getSlug");
-    return window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1)
+    return window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1);
 }
 
 const dataConstructor = async () => {
-    console.log("dataConstructor");
-    if (window.location.pathname.includes("/clip/") || window.location.hostname === "clips.twitch.tv") {//clip data constructing
+    //clip data constructing
+    if (window.location.pathname.includes("/clip/") || window.location.hostname === "clips.twitch.tv") {
         const apiClipObj = await apiFetch(clipQuery(getSlug()));
-        const name = apiClipObj.clip.broadcaster.login
-        apiUserVods(userVideosQuery(name, 100)) //try to find vod on load as a replacement for twitch's watch full vod button
-        console.log(apiClipObj);
-    if(apiClipObj.clip.videoOffsetSeconds){ //if clip has a vod attached get exact timestamp of clip by adding offset to vod start time.
-        guiObj.data.timeStamp = (Date.parse(apiClipObj.clip.video.createdAt)/1000)+apiClipObj.clip.videoOffsetSeconds
-    }
-    else{ //this gets the clip creation timestamp subtracts 30 seconds as a guess but can be way off if clip made from vod
-        infoControl("novod"); //warn that links might be inaccurate because no vod timestamp.
-        guiObj.data.timeStamp = (Date.parse(apiClipObj.clip.createdAt)/1000)-30
-    }
-
+        const name = apiClipObj.clip.broadcaster.login;
+        //if clip has a vod attached get exact timestamp of clip by adding offset to vod start time.
+        if(apiClipObj.clip.videoOffsetSeconds){
+        lgData.timeStamp = (Date.parse(apiClipObj.clip.video.createdAt)/1000)+apiClipObj.clip.videoOffsetSeconds;
+        if(lgData.options.createClipLink){
+            setTimeout(() => { //added a delay for looks
+                apiUserVods(userVideosQuery(name, 100), true);//true = don't save name
+            }, 600);
+        }
+        }else{//gets the clip creation timestamp subtracts 30 seconds as a guess
+            lgData.noVodData = true;
+            infoControl("default"); //warn that links might be inaccurate because no vod timestamp.
+            lgData.timeStamp = Math.floor(Date.parse(apiClipObj.clip.createdAt)/1000)-30;
+            //try to find vod if vod isn't attached in data
+            setTimeout(() => { //added a delay for looks
+                apiUserVods(userVideosQuery(name, 100), true);//true = don't save name
+            }, 600);
+        }
     //vod data constructing
-    } else if (window.location.pathname.includes("/videos/") || window.location.pathname.includes("/video/")) {
+    } else if (window.location.pathname.includes("/videos/")) {
         const apiVodObj = await apiFetch(videoQuery(getSlug()));
         if(apiVodObj.video.broadcastType === "ARCHIVE"){
-        guiObj.data.timeStamp = (Date.parse(apiVodObj.video.createdAt)/1000) //this sets the timestamp to the start time of the vod. Have to add the player time when user inputs
+        //timestamp to the start time of the vod. add player time on input
+        lgData.timeStamp = (Date.parse(apiVodObj.video.createdAt)/1000);
         } else{
-            guiObj.inputBox.remove(); //disabling the GUI for highlights or uploads because it won't work
-            guiObj.infoDiv.innerText = "Not a VOD. LookingGlass disabled."
-            guiObj.botDiv.remove(); //leaving the wrapper so the gui doesn't regen
+            infoControl("notVod");
         }
     }
-}
-
-function getType(){
-    if (window.location.pathname.includes("/clip/") || window.location.hostname === "clips.twitch.tv") {
-        return "clip";
-    }else{
-        return "vod"
-    };
-}
+};
 
 function looper() {
-    //console.log("looper");
     setTimeout(() => {
         expressCheck();
         guiCheck();
@@ -186,74 +283,107 @@ function looper() {
     }, 2000);
 }
 
-function initializeExpressListener(){
-    console.log("initializeExpressListener");
-    guiObj.expressInputBox.addEventListener("keydown", (event) =>{
-        if(event.defaultPrevented){return;}
-        switch(event.code) {
-            case "Enter": case "NumpadEnter":
-                if(guiObj.expressInputBox.value === ""){flashRed(guiObj.expressInputBox);return}
-                else if (guiObj.expressInputBox.value.startsWith('-')) {
-                    nameRemover(guiObj.expressInputBox.value);
-                    guiObj.expressInputBox.value = "";
-                    return;
-                }
-                else{apiReturnExpress(userVideosQuery(guiObj.expressInputBox.value, 1))}
-                guiObj.expressInputBox.value = "";
+function expressGo(event){
+    if (event.code === "Enter" || event.keyCode === 13){
+        const exValue = event.target.value;
+        if(exValue === ""){flashRed(guiObj.expressInputBox);return;}
+        if(exValue.startsWith("-")) {
+            removeName(exValue.substring(1)); // Removes the "-"
+        }else if(exValue.startsWith("/")){
+            commandInput(exValue);
         }
-    })
+        else{apiReturnExpress(userVideosQuery(exValue, 1));}
+        guiObj.expressInputBox.value = "";
+    }
 }
 
-function initializeGuiListener(){
-    console.log("initializeGuiListener");
-    guiObj.inputBox.addEventListener("keydown", (event) =>{
-        if(event.defaultPrevented){return;}
-        switch(event.code) {
-            case "Enter": case "NumpadEnter":
-            guiObj.data.ctrlState = event.getModifierState("Control") //true if control is held down during enter press false if isn't held down
-            const name = getInput()
-            if(!name){return;}
-            apiUserVods(userVideosQuery(name, 100));
-        }
-    })
+function mainGo(event){
+    if (event.code === "Enter" || event.keyCode === 13){
+        const name = getInput();
+        //true if control is held down during enter press false if not
+        lgData.ctrlState = event.getModifierState("Control");
+        if(!name){return;}
+        apiUserVods(userVideosQuery(name, 100));
+    }
 }
 
 function getInput(){
-    console.log("getInput");
-    let value = guiObj.inputBox.value
-    if (value.startsWith('-')) {
-        nameRemover(value);
-        guiObj.inputBox.value = "";
+    let value = guiObj.inputBox.value;
+    guiObj.inputBox.value = "";
+    if (value.startsWith("/")){
+        commandInput(value);
         return;
     }
-    value = value.replace(/\W/g, '');//clears the input of non alphanumeric characters
+    if (value.startsWith("-")) {
+        removeName(value.substring(1)); // Removes the "-"
+        return;
+    }
+    value = value.replace(/\W/g, "");//clears the input of non alphanumeric characters
     if(value === ""){
         flashRed(guiObj.inputBox);
-        guiObj.inputBox.value = "";
         return;
     }
-    guiObj.inputBox.value = "";
     return value;
 }
-function nameRemover(value){
-    const name = value.substring(1); // Remove the '-' prefix
-    if (name === 'clearallsuggestions') {
-        clearAllEntries();
-    } else {
-        removeName(name);
+
+//clear a name from suggestions list
+function removeName(name) {
+    const lowercaseName = name.toLowerCase();
+    if(lgData.suggestions[lowercaseName]) {
+      delete lgData.suggestions[lowercaseName];
+      const suggestions = lgData.suggestions;
+      browser.storage.local.set({ names: suggestions }, () => {
+        if(guiObj.wrapper){infoControl("removedName", name)};
+      });
     }
-    return;
+    else{
+        if(guiObj.wrapper){infoControl("notInSuggestions", name)};
+    }
+}
+
+//clear all suggestions
+function clearAllNames() {
+    lgData.suggestions = {};
+    browser.storage.local.set({ names: {} }, () => {
+        infoControl("removedAllNames")
+    });
+}
+
+function commandInput(command){
+    const input = command.substring(1).toLowerCase();
+    if(input === "options" || input === "settings"){
+        browser.runtime.sendMessage({ action: "openOptionsPage" });
+    }
+    else if(input === "clear" && guiObj.wrapper){
+        clearBubbles();
+    }
+    else if (input === "clearallnames") {
+        clearAllNames();
+    }
+}
+
+function clearBubbles(){
+    const newBotDiv = document.createElement("div");
+    newBotDiv.setAttribute("id", "botDiv");
+    //Prevent context menu from popping up on misclick
+    newBotDiv.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+    });
+    guiObj.wrapper.replaceChild(newBotDiv, guiObj.botDiv);
+    guiObj.botDiv = newBotDiv;
+    infoControl("clear");
 }
 
 function flashRed(targetBox) {
-    targetBox.classList.add('error');
+    targetBox.classList.add("error");
     setTimeout(() => {
-        targetBox.classList.remove('error');
+        targetBox.classList.remove("error");
     }, 500);
 }
 
-//gql queries //moreinformation here https://supersonichub1.github.io/twitch-graphql-api/
-function videoQuery(input){ //video id input gets video info back
+//gql queries more information here https://kawcco.com/twitch-graphql-api/
+//video id input gets video info back
+function videoQuery(input){
     const videoq =(
       `query {
         video(id: ${input}) {
@@ -267,11 +397,11 @@ function videoQuery(input){ //video id input gets video info back
               }
         }
       }`);
-    return videoq
-};
-
-function userVideosQuery(input,ninput){ //twitch name input gets videos back ninput is number of videos you want
-  const userq =( 
+    return videoq;
+}
+//twitch name input gets videos back ninput is number of videos you want
+function userVideosQuery(input,ninput){
+  const userq =(
     `query {
       user(login: "${input}") {
         videos(first:${ninput}, type: ARCHIVE) {
@@ -288,9 +418,9 @@ function userVideosQuery(input,ninput){ //twitch name input gets videos back nin
       }
     }`);
     return userq;
-};
-
-function clipQuery(input){ //clip slug input and gets clip info back
+}
+//clip slug input and gets clip info back
+function clipQuery(input){
     const query =(
       `query {
         clip(slug: "${input}") {
@@ -305,17 +435,17 @@ function clipQuery(input){ //clip slug input and gets clip info back
               createdAt
             }
         }
-        }`)
+        }`);
     return query;
-};
+}
 
-const apiFetch = async (input) => { // using gql api that is not supported by twitch but helix is pain
-    console.log("apiFetch");
+// using gql api that is not supported by twitch but it's easier
+const apiFetch = async (input) => {
     let gqlfetch = fetch(`https://gql.twitch.tv/gql`, {
-      method: `POST`, 
+      method: `POST`,
       body: JSON.stringify({query: input}),
-      headers: {"Client-Id": "kimne78kx3ncx6brgo4mv6wki5h1ko",}
-    })
+      headers: {"Client-Id": "kimne78kx3ncx6brgo4mv6wki5h1ko"}
+    });
     return gqlfetch
       .then(response => response.json())
       .then((data) => {
@@ -323,37 +453,39 @@ const apiFetch = async (input) => { // using gql api that is not supported by tw
       });
 };
 
-const apiReturnExpress = async (input) => { //user input to get single video link back and open latest vod
-    console.log("apiReturnExpress");
+//user input to get single video link back and open latest vod
+const apiReturnExpress = async (input) => {
     const a = await apiFetch(input);
     if(!a.user){ //if no user exit
-        flashRed(guiObj.expressInputBox);
-        return;
-    } 
-    saveName(a.user.login); //save name for suggestions only if it's a valid twitch name
-    if(a.user.videos.edges.length === 0){ //if user exists but has no videos just exit
+      flashRed(guiObj.expressInputBox);
+      return;
+    }
+    saveName(a.user.login); //saves name if valid
+    if(a.user.videos.edges.length === 0){//no videos return
         flashRed(guiObj.expressInputBox)
         return
-    }; 
+    };
     const link =("https://twitch.tv/videos/").concat(a.user.videos.edges[0].node.id);
+    setTimeout(() => { //dumbest patch but firefox won't save name without this delay
     window.open(link, "_blank");
-};
+    }, 100);
+  };
 
-const apiUserVods = async (input) => { //user information api call
-    console.log("apiUserVods");
+const apiUserVods = async (input, doNotSave) => { //user information api call
     const temp = await apiFetch(input);
     if(!temp.user){infoControl("noUser");return}
-    saveName(temp.user.login); //if it's a valid twitch name save name for suggestions
-    if(temp.user.videos.edges.length < 1){ //if they have no vods exit
-        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>No VOD found.</span>";
-        guiObj.infoDiv.innerHTML +=` ${temp.user.displayName}  has 0 vods.`;
+    if(!doNotSave){ //so it doesn't save name from auto-links on clips
+        saveName(temp.user.login); //save for suggestions
+    }
+    if(temp.user.videos.edges.length < 1){//if they have no vods exit
+        infoControl("zeroVods", temp.user.displayName);
         return;
     }
-    vodArraySearch(temp.user.videos.edges, temp.user.displayName);
+    vodArraySearch(temp.user.videos.edges, temp.user.displayName, doNotSave);
 };
 
 function toSeconds(time) { //Input: "00:46:12" -> Output: 2772
-    const [hours = 0, minutes = 0, seconds = 0] = time.split(':').reverse().map(Number);
+    const [hours = 0, minutes = 0, seconds = 0] = time.split(":").map(Number);
     return (hours * 3600) + (minutes * 60) + seconds;
 }
 
@@ -363,17 +495,6 @@ function secondsCalc(totalSeconds) {
     const seconds = totalSeconds % 60;
 
     return `${hours}h${minutes}m${seconds}s`;
-}
-
-function getPlayerSeconds(){
-    console.log("getPlayerSeconds");
-    let time = playerTimeTarget()
-    if(!time){
-        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>ERROR: Can't find player time.</span>";
-        return;
-    }
-    let timeSeconds = toSeconds(time);
-    return timeSeconds;
 }
 
 function convertToOrdinal(number) { //numbers to 1st 2nd 3rd etc
@@ -393,81 +514,78 @@ function convertToOrdinal(number) { //numbers to 1st 2nd 3rd etc
 }
 
 function constructLink(vodID,time){
-    console.log("constructLink");
     const link = ("https://twitch.tv/videos/").concat((vodID).concat("?t=")).concat(time);
     return link;
 }
 
-function vodArraySearch(array, name){
-    console.log("vodArraySearch");
-    let currentVodTime = playerTimeTarget() ? getPlayerSeconds() : 0; //if target exists gets the playertime in seconds else sets it to 0
-    let timeStamp = guiObj.data.timeStamp + currentVodTime;
-    if(timeStamp > (Date.parse(array[0].node.createdAt)/1000)+array[0].node.lengthSeconds){ //if timestamp is newer than the end of the first vod don't search
-        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>No VOD found.</span>";
-        guiObj.infoDiv.innerHTML +=` All ${array.length} of ${name}'s  VODs are older than this.`;
+function vodArraySearch(array, name, doNotSave){
+    let currentVodTime;
+    if (lgData.url.includes("/clip/") || window.location.hostname === "clips.twitch.tv"){
+        currentVodTime = 0;
+    }else{
+        currentVodTime = getPlayerSeconds()
+        if(!currentVodTime){return}
+    }
+    let timeStamp = lgData.timeStamp + currentVodTime;
+    //if timestamp is newer than the end of the first vod don't search
+    if(timeStamp > (Date.parse(array[0].node.createdAt)/1000)+array[0].node.lengthSeconds){
+        infoControl("oldVods", name, array.length)
         return;
     }
-    if(timeStamp < Date.parse(array[array.length-1].node.createdAt)/1000){ //if timestamp is older than the start of the oldest vod don't search
-        guiObj.infoDiv.innerHTML = "<span style='color: #f03a17;'>No VOD found.</span>";
-        guiObj.infoDiv.innerHTML +=` This is older than all ${array.length} of ${name} VODs.`;
+    //if timestamp is older than the start of the oldest vod don't search
+    if(timeStamp < Date.parse(array[array.length-1].node.createdAt)/1000){
+        infoControl("olderThanVods", name, array.length)
         return;
     }
     for(let i = 0; i < array.length; i++){
         let vodStart = (Date.parse(array[i].node.createdAt)/1000)
         let vodEnd = (Date.parse(array[i].node.createdAt)/1000)+array[i].node.lengthSeconds
-        if(timeStamp < vodStart){continue;} //if timestamp is less than the start of a vod, check the next vod
-        if(timeStamp < vodEnd){ //timeStamp > vodStart is implied because of the previous if statement
-            const urlTime = secondsCalc(timeStamp-vodStart) //gets number of seconds into the vod and converts it
-            if(guiObj.data.ctrlState){window.open(constructLink(array[i].node.id, urlTime), "_blank")}
-            constructGreenBubble(constructLink(array[i].node.id, urlTime), name); //make green bubble
-            foundVodInfoControl(name, convertToOrdinal(i+1), array.length) //set info
+        if(timeStamp < vodStart){continue;}//check the next vod
+        if(timeStamp < vodEnd){//creates green bubble
+            const urlTime = secondsCalc(timeStamp-vodStart)
+            const link = constructLink(array[i].node.id, urlTime)
+            if(lgData.ctrlState || (lgData.options.instantOpen && !doNotSave)){
+                setTimeout(() => { // should fix this firefox bug a different way but works for now
+                window.open(link, "_blank")
+                }, 100);
+            }
+            constructGreenBubble(link, name, urlTime); //make green bubble
+            infoControl("foundVod", name, array.length, i+1) //add 1 because starts at 0
             break;
         } else{
-            noVodInfoControl(name, i, array.length); //no vod found info
+            infoControl("noFoundVod", name, array.length, i); //no vod found info
             break;
         }
     }
 }
 
-function foundVodInfoControl(name, placement, numberOfVods){
-    guiObj.infoDiv.innerHTML = `<span style='color: #FFD700;'>Found</span>`;
-    guiObj.infoDiv.innerHTML += ` in ${name}'s ${placement} VOD of ${numberOfVods}. Right-click bubble for details.`;
-}
-
-function noVodInfoControl(name, placement, numberOfVods){
-    const vodBefore = convertToOrdinal(placement)
-    const vodAfter = convertToOrdinal(placement+1)
-    guiObj.infoDiv.innerHTML = `<span style='color: #f03a17;'>No VOD found.</span>`;
-    guiObj.infoDiv.innerHTML +=` Searched ${numberOfVods} of ${name}'s  VODs and this occurred inbetween ${vodBefore} and ${vodAfter} VODs.`;
-}
-
-function constructGreenBubble(link, name) {
-    console.log("constructGreenBubble");
-
-    //building bubble
-    const bubble = guiObj.botDiv.appendChild(document.createElement('div'));
+function constructGreenBubble(link, name, urlTime) {
+    const bubble = guiObj.botDiv.appendChild(document.createElement("div"));
     bubble.setAttribute("class", "bubble");
 
     // Display channel name in bubble
-    const targetName = bubble.appendChild(document.createElement('p'));
+    const targetName = bubble.appendChild(document.createElement("p"));
     targetName.setAttribute("class", "targetName");
     targetName.innerText = name
-    //targetName.innerText = name.toUpperCase();
 
     //for bubble rclick display data
-    const reg = /([^\=]+$)/; //after the last '='
-    bubble.setAttribute("data-targetTime", "@" + reg.exec(link)[0]); //Extract outgoing time from link
-    if(getType() === "vod"){ //if its a vod get player time for display
+    bubble.setAttribute("data-targetTime", "@" + urlTime);
+    if(lgData.url.includes("/videos/")){//for vods
     bubble.setAttribute("data-playerTime", secondsCalc(getPlayerSeconds()) + "➔");
-    }else{bubble.setAttribute("data-playerTime","➔")}; //clips = blank
+    }else{bubble.setAttribute("data-playerTime","➔")};
 
+    bubble.addEventListener("contextmenu", function(event) {
+        event.preventDefault();
+        bubble.classList.toggle("active");
+        close.classList.toggle("active");
+    });
     // Open link in a new tab when clicked
-    bubble.addEventListener("click", function() { 
+    bubble.addEventListener("click", function() {
         window.open(link, "_blank");
     });
 
     // Add close button
-    const close = guiObj.botDiv.appendChild(document.createElement('div')); 
+    const close = guiObj.botDiv.appendChild(document.createElement("div"));
     close.setAttribute("class", "closeLink");
     close.innerText = "❌";
     close.addEventListener("click", function() {
@@ -475,75 +593,35 @@ function constructGreenBubble(link, name) {
         close.remove();
         infoControl("default")
     });
-
-    // Toggle active state on right-click
-    bubble.addEventListener("contextmenu", function(event) {
-        event.preventDefault();
-        bubble.classList.toggle("active");
-        targetName.classList.toggle("active");
-        close.classList.toggle("active");
-    });
 }
 
-// Save a new name to storage
+//Save a new name to storage
 function saveName(name) {
+    if(lgData.options.disableAutocomplete){return;}
     const lowerCaseName = name.toLowerCase()
-    guiObj.data.suggestions[lowerCaseName] = (guiObj.data.suggestions[lowerCaseName] || 0) + 1;
-    const suggestions = guiObj.data.suggestions;
-    browser.storage.local.set({ names: suggestions }, () => {});
-}
-
-// Load names from storage
-function loadNames() {
-    return new Promise((resolve) => {
-      browser.storage.local.get(['names'], (data) => {
-        const names = data.names || {};
-        resolve(names);
-      });
-    });
-}
-
-//clear a name from suggestions list
-function removeName(name) {
-    const lowercaseName = name.toLowerCase();
-    if (guiObj.data.suggestions[lowercaseName]) {
-      delete guiObj.data.suggestions[lowercaseName];
-      const suggestions = guiObj.data.suggestions;
-      browser.storage.local.set({ names: suggestions }, () => {
-        guiObj.infoDiv.innerHTML = `${name} cleared from suggestions.`;
-        guiObj.inputBox.value = "";
-      });
-    }
-}
-
-//clear all suggestions
-function clearAllEntries() {
-    guiObj.data.suggestions = {};
-    browser.storage.local.set({ names: {} }, () => {
-        guiObj.infoDiv.innerHTML = "All suggestions cleared.";
-    });
+    //if name already saved, use it's input number. else set it 0 then +1 to either
+    lgData.suggestions[lowerCaseName] = (lgData.suggestions[lowerCaseName] || 0) + 1;
+    browser.storage.local.set({ names: lgData.suggestions }, () => {});
 }
 
 function autocomplete(input) {
     const inputValue = input.value.toLowerCase();
-    const suggestions = Object.entries(guiObj.data.suggestions)
+    const suggestions = Object.entries(lgData.suggestions)
       .filter(([name]) => name.startsWith(inputValue))
-      .sort((a, b) => b[1] - a[1]) // Sort by frequency in descending order
-      .map(([name]) => name); // Extract just the name
-  
-    return suggestions[0] || ''; // Return the first suggestion or an empty string
+      .sort((a, b) => b[1] - a[1]) //Sort by frequency in descending order
+      .map(([name]) => name); //Extract just the name
+    return suggestions[0] || ""; //Return the first suggestion or an empty string
 }
 
 // Function to handle user input
 function handleInput(event) {
-    console.log("handleInput");
+    if(lgData.options.disableAutocomplete){return;}
     const input = event.target;
     const position = input.selectionStart;
-    if (!input.value) return;
-
+    if(!input.value){return;}
     const suggestion = autocomplete(input);
 
-    if (suggestion && event.inputType !== 'deleteContentBackward') {
+    if(suggestion && event.inputType !== "deleteContentBackward") {
         const newValue = input.value.substring(0, position) + suggestion.substring(input.value.length);
         input.value = newValue;
         // Move cursor to the end of the inserted text
@@ -551,15 +629,16 @@ function handleInput(event) {
     }
 }
 
-function inputQOL(event){ //tab moves cursor to end of suggestion and you can delete everything with ctrl+backspace
+//quality of life shortcuts for autocomplete input
+function inputQOL(event){
     const input = event.target;
-    if (event.key === "Tab") {
-        event.preventDefault(); // Prevent default Tab behavior
-        input.setSelectionRange(input.value.length, input.value.length); // Move cursor to the end
+    if (event.key === "Tab") {// Move cursor to the end
+        event.preventDefault();
+        input.setSelectionRange(input.value.length, input.value.length);
         return;
     }
-    if (event.key === 'Backspace' && event.ctrlKey) {
+    if (event.key === "Backspace" && event.ctrlKey) {
         input.value = ""; //set input to blank
         return;
-    } 
+    }
 }

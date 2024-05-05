@@ -1,21 +1,23 @@
 {
-    "name": "TTV Looking Glass",
-    "version": "0.0.1.16",
-    "description": "Simply generate links to other perspectives while watching Twitch clips and vods. Adds Express Vod to Twitch nav bar.",
-    "content_scripts": [
-      {
-        "matches": ["*://clips.twitch.tv/*","*://www.twitch.tv/*"],
-        "js": ["main.js"],
-        "run_at": "document_end",
-        "css": ["style.css"]
-      }
-    ],
-    "icons": {
-      "48": "icons/48.png",
-      "128": "icons/128.png"
-    },
-    "manifest_version": 3,
-    "permissions": [
-      "storage"
-    ]
+  "name": "TTV Looking Glass",
+  "description": "Generates links to other VODs allowing you to easily sync clips and vods.",
+  "manifest_version": 3,
+  "version": "0.0.1.24",
+  "icons": {
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "options_page": "options/options.html",
+  "permissions": ["storage"],
+  "content_scripts": [
+    {
+      "matches": ["*://clips.twitch.tv/*", "*://www.twitch.tv/*"],
+      "js": ["main.js"],
+      "run_at": "document_end",
+      "css": ["style.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
   }
+}

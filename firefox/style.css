@@ -1,14 +1,19 @@
-/*
-    --lggreen: #05483F;
-    --lgyellow: #D68029;
-    --lgred: #7F0423;
-*/
-#expressInputBox{
-    box-sizing: border-box;
-    opacity: 50%;
+.inputBox{
+    color: var(--color-text-input, white); /*use twitch's text color or white if doesn't exist*/
+    border-radius: 6px;
     background-color: transparent;
-    border-radius:6px;
-    color: var(--color-text-input, white); /*use twitch's css or white if doesn't exist*/
+    transition: border-color .75s;
+    opacity: 50%;
+    border-style: solid;
+    border-width: 1px;
+}
+
+.inputBox:focus{
+    outline: none;
+    opacity: 100%;
+}
+
+#expressInputBox{
     font-size:12px;
     padding-left: 5px;
     height: 50%;
@@ -16,46 +21,13 @@
     flex-grow: 0 !important;
     flex-shrink: 0 !important;
     flex-wrap: nowrap !important;
-    transition: border-color .75s;
 }
 
-#expressInputBox:focus{
-    outline: none; /* Remove default focus outline */
-    opacity: 100%;
-}
-
-#guiWrapper{
-    margin-top: 5px;
-}
-
-#topDiv{
-    padding: 5px;
-    padding-top: 1rem;
-    max-height: initial;
-    height: 50%;
-    width: 100%;
-    margin: 0;
-    box-sizing: border-box;
-    font-weight: 600 !important;
-    font-family: 'Roboto', sans-serif;
-}
-
-#inputBox{
-    box-sizing: border-box;
-    padding-left: 5px;
-    border-radius:6px;
-    opacity: 50%;
-    height: 100%;
+#mainInputBox{
+    padding-left: 6px;
+    height: 24px;
     width: 12%;
-    transition: border-color .75s;
-    background-color: transparent;
-    color: var(--color-text-input, white); /*use twitch's css or white if doesn't exist*/
     font-size:17px;
-}
-
-#inputBox:focus{
-    outline: none;
-    opacity: 100%;
 }
 
 .error {
@@ -63,45 +35,61 @@
     transition: border-color .5s;
 }
 
+#guiWrapper{
+    font-family: 'Roboto', sans-serif;
+    padding: 10px;
+    font-style: bold;
+}
+
+#topDiv{
+    max-height: initial;
+    height: 50%;
+    width: 100%;
+    margin: 0;
+    font-weight: 600 !important;
+}
+
 #infoDiv{
     padding-left: 10px;
     display: inline;
     text-align: left;
     font-size: 14px;
-    color: white;
+    color: var(--color-text-input, white); /*use twitch's text color or white if doesn't exist*/
+    transition: opacity 0.2s ease;
+}
+
+.infoWarning{
+   color: #FF8811 !important;
 }
 
 #botDiv{
-    display: flex;
+    display: inline-flex;
+    flex-direction: row;
     flex-wrap: wrap;
-    padding: 5px;
-    min-height: initial;
-    height: 50%;
     width: 100%;
-    position: relative;
+    height: 100%;
+    padding-top: 5px;
 }
 
 .bubble{
-    display: inline-block;
+    font-weight: bold;
+    display: inline-flex;
+    flex-direction: row;
     background-color: #05483F;
-    height: 100%;
     margin-right: .5%;
-    border-radius:6px;
+    border-radius: 6px;
     padding-left: 7px;
     padding-right: 7px;
-    display: flex;
-    align-items: center;
     margin-bottom:  .5%;
     cursor: pointer;
-    text-align: center;
+    align-items: center;
+    height: 26px;
 }
 .bubble[data-targetTime]:after{
     content: attr(data-targetTime);
-    font-family: 'Roboto', sans-serif;
     font-size: 0px;
-    font-weight: bold;
     transition: .15s;
-    color: #FFD700;
+    color: #72F176;
 }
 
 .bubble[data-targetTime].active:after{
@@ -110,32 +98,29 @@
 
 .bubble[data-playerTime]:before{
     content: attr(data-playerTime);
-    font-family: 'Roboto', sans-serif;
-    color: #FFD700;
+    color: #72F176;
     font-size: 0px;
-    font-weight: bold;
     transition: .15s;
 }
+
 .bubble[data-playerTime].active:before {
     font-size: 15px;
 }
 
 .targetName{
-    color: white;
     font-size: 17px;
-    font-weight: bold;
-    font-family: 'Roboto', sans-serif;
-    overflow: hidden;
+    color: white;
+    text-align: center !important;
 }
 
 .closeLink{
     font-size: 0rem;
+    height: 50%;
     position: relative;
     left: -10px;
-    margin-bottom: .45%;
+    transition: .15s;
 }
 .closeLink.active{
     font-size: 1.75rem;
     cursor: pointer;
-    display: inline-block;
 }
