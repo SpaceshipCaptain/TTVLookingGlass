@@ -26,7 +26,7 @@ chrome.storage.local.get(["options"], (data) => {
     else{//defaults to false if no options
       lgData.options = {
         instantOpen: false,
-        createClipLink: false,
+        createClipLink: true,
         disableAutocomplete: false
       };
     }

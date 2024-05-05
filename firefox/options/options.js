@@ -7,7 +7,7 @@ let userOptions = {};
 browser.storage.local.get(['options'], (data) => {
     userOptions = data.options || {//Set defaults if none exist
       instantOpen: false,
-      createClipLink: false,
+      createClipLink: true,
       disableAutocomplete: false
     };
     //sets the checkboxes to saved options values.
