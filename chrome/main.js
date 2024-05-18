@@ -53,9 +53,6 @@ function underPlayerTarget() {
     let guiTarget = document.querySelector("div.metadata-layout__split-top");
     if(guiTarget){return guiTarget.parentNode;}
     if(window.location.hostname === "clips.twitch.tv"){
-        //this one should be removed in the future if twitch settles on the new design
-        guiTarget = document.querySelector("div.clips-watch");
-        if(guiTarget && guiTarget.firstChild.childNodes.length > 2){return guiTarget.firstChild.lastChild;}
         //backup clip target for new design
         guiTarget = document.querySelector("div.clips-player");
         if(guiTarget){return guiTarget.childNodes[1];}
@@ -219,6 +216,12 @@ function infoControl(textCode, name, nVods, placement){
             info.innerHTML = `<span style='color: ${red};'>${name}</span>`;
             info.innerHTML +=" was not in suggestions list.";
         }
+        else if(textCode === "apiFail"){
+            info.innerHTML = `<span style='color: ${red};'>ERROR: API did not return data. Contact Dev if this persists.</span>`;
+            guiObj.inputBox.remove();
+            info.style.opacity = "1"; //need to set text to visible
+            return; //skips reset info if setting to default
+        }
         else if(textCode === "notVod"){
             info.innerHTML = `<span style='color: ${red};'>Not a VOD: LookingGlass disabled.</span>`;
             guiObj.inputBox.remove(); //disabling the GUI for highlights/uploads
@@ -266,6 +269,7 @@ const dataConstructor = async () => {
     //vod data constructing
     } else if (window.location.pathname.includes("/videos/")) {
         const apiVodObj = await apiFetch(videoQuery(getSlug()));
+        if(!apiVodObj){infoControl("apiFail");return;}
         if(apiVodObj.video.broadcastType === "ARCHIVE"){
         //timestamp to the start time of the vod. add player time on input
         lgData.timeStamp = (Date.parse(apiVodObj.video.createdAt)/1000);
@@ -386,7 +390,7 @@ function flashRed(targetBox) {
 function videoQuery(input){
     const videoq =(
       `query {
-        video(id: ${input}) {
+        video(id: "${input}") {
               createdAt
               lengthSeconds
               id
