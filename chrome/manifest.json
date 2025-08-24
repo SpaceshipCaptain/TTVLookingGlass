@@ -2,7 +2,7 @@
   "name": "TTV Looking Glass",
   "description": "Generates links to other VODs allowing you to easily sync clips and vods.",
   "manifest_version": 3,
-  "version": "0.0.1.26",
+  "version": "0.0.1.28",
   "icons": {
     "48": "icons/48.png",
     "128": "icons/128.png"
@@ -11,7 +11,7 @@
   "permissions": ["storage"],
   "content_scripts": [
     {
-      "matches": ["*://clips.twitch.tv/*", "*://www.twitch.tv/*"],
+      "matches": ["*://*.twitch.tv/*", "*://*.kick.com/*"],
       "js": ["main.js"],
       "run_at": "document_end",
       "css": ["style.css"]
@@ -19,5 +19,11 @@
   ],
   "background": {
     "service_worker": "background.js"
-  }
+  },
+    "web_accessible_resources": [
+    {
+      "resources": ["icons/twitch.svg", "icons/kick.svg"],
+      "matches": ["https://*.twitch.tv/*", "https://*.kick.com/*"]
+    }
+  ]
 }

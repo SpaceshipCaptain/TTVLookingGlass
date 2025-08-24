@@ -1,6 +1,6 @@
 # TTV Looking Glass
 
-Looking Glass is an extension to help you sync Twtich clips and vods.
+Helps you sync clips and vods across both Twitch.tv and Kick.com by generating links.
 
 [CHROME Webstore](https://chrome.google.com/webstore/detail/ttv-looking-glass/phikemnogmdhgadokdnahneeihokkkcf)
 

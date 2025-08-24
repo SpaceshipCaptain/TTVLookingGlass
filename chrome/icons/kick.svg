@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="15%"/>
+    <svg viewBox="0 0 8 9" x="96" width="312">
+        <g fill="#53fc18">
+            <defs>
+                <rect id="square" width="3" height="3" />
+            </defs>
+            <rect width="3" height="9" />
+
+            <use href="#square" x="4" y="1"/>
+            <use href="#square" x="5" y="0"/>
+
+            <use href="#square" x="4" y="5"/>
+            <use href="#square" x="5" y="6"/>
+
+            <rect x="2" y="2" width="4" height="5"/> 
+        </g>
+    </svg>
+</svg>

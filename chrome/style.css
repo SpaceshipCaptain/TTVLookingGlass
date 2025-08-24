@@ -1,8 +1,16 @@
+:root {
+    --text-white: #e2eff1;
+    --twitch-purple: #7d5bbe;
+    --kick-green: #3ecf11;
+    --bubble-bg-twitch: #3a2a55;
+    --bubble-bg-kick: #1e2b1a;
+}
+
 .inputBox{
-    color: var(--color-text-input, white); /*use twitch's text color or white if doesn't exist*/
+    color: var(--color-text-input, #e2eff1); /*use twitch's text color or white if doesn't exist*/
     border-radius: 6px;
     background-color: transparent;
-    transition: border-color .75s;
+    transition: border-color .25s;
     opacity: 50%;
     border-style: solid;
     border-width: 1px;
@@ -11,39 +19,59 @@
 .inputBox:focus{
     outline: none;
     opacity: 100%;
+    border-width: 2px;
+}
+
+.inputBox.twitch {
+    border-color: var(--twitch-purple);
+}
+
+.inputBox.kick {
+    border-color: var(--kick-green);
 }
 
 #expressInputBox{
     font-size:12px;
     padding-left: 5px;
-    height: 50%;
-    width: 25%;
-    flex-grow: 0 !important;
-    flex-shrink: 0 !important;
-    flex-wrap: nowrap !important;
+    height: 25px;
+    width: 100px;
+}
+
+#iconContainer {
+    display: inline;
+    cursor: pointer;
+    padding-right: 5px;
+}
+
+.api-icon {
+    height: 24px;
+    width: 24px;
+    display: none;
+}
+
+/*both icons are mounted but one is always display none*/
+.api-icon.active {
+    display: inline-block;
 }
 
 #mainInputBox{
-    padding-left: 6px;
     height: 24px;
-    width: 12%;
+    width: 150px;
     font-size:17px;
+    padding-left: 5px;
 }
 
 .error {
-    border-color: #f03a17;
+    border-color: #f03a17 !important;
     transition: border-color .5s;
 }
 
 #guiWrapper{
     font-family: 'Roboto', sans-serif;
     padding: 10px;
-    font-style: bold;
 }
 
 #topDiv{
-    max-height: initial;
-    height: 50%;
     width: 100%;
     margin: 0;
     font-weight: 600 !important;
@@ -54,11 +82,11 @@
     display: inline;
     text-align: left;
     font-size: 14px;
-    color: var(--color-text-input, white); /*use twitch's text color or white if doesn't exist*/
+    color: var(--color-text-input, #e2eff1);
     transition: opacity 0.2s ease;
 }
 
-.infoWarning{
+#mainInputBox:focus ~.infoWarning{
    color: #FF8811 !important;
 }
 
@@ -67,60 +95,94 @@
     flex-direction: row;
     flex-wrap: wrap;
     width: 100%;
-    height: 100%;
     padding-top: 5px;
 }
 
-.bubble{
-    font-weight: bold;
+.bubble-container {
     display: inline-flex;
-    flex-direction: row;
-    background-color: #05483F;
-    margin-right: .5%;
-    border-radius: 6px;
-    padding-left: 7px;
-    padding-right: 7px;
-    margin-bottom:  .5%;
-    cursor: pointer;
     align-items: center;
-    height: 26px;
-}
-.bubble[data-targetTime]:after{
-    content: attr(data-targetTime);
-    font-size: 0px;
-    transition: .15s;
-    color: #72F176;
-}
-
-.bubble[data-targetTime].active:after{
-    font-size: 15px;
-  }
-
-.bubble[data-playerTime]:before{
-    content: attr(data-playerTime);
-    color: #72F176;
-    font-size: 0px;
-    transition: .15s;
-}
-
-.bubble[data-playerTime].active:before {
-    font-size: 15px;
-}
-
-.targetName{
-    font-size: 17px;
-    color: white;
-    text-align: center !important;
-}
-
-.closeLink{
-    font-size: 0rem;
-    height: 50%;
     position: relative;
-    left: -10px;
-    transition: .15s;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-bottom: 5px;
 }
-.closeLink.active{
-    font-size: 1.75rem;
+
+.bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 3px;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #2a2a2a;
+    color: var(--text-white);
+    text-decoration: none !important;
+}
+
+.bubble.twitch {
+    border-left: 3px solid #9146FF;
+    border-right: 3px solid #9146FF;
+    background-color: var(--bubble-bg-twitch);
+}
+.bubble.kick {
+    border-left: 3px solid #53FC18;
+    border-right: 3px solid #53FC18;
+    background-color: var(--bubble-bg-kick);
+}
+
+.playerTime,
+.targetTime {
+    font-size: 0px;
+    transition: font-size .15s;
+    font-weight: bold;
+}
+
+.bubble-container.active .playerTime,
+.bubble-container.active .targetTime {
+    font-size: 14px;
+}
+
+.bubble.twitch .playerTime,
+.bubble.twitch .targetTime {
+    color: #b3a9c9;
+}
+.bubble.kick .playerTime,
+.bubble.kick .targetTime {
+    color: #a3cfa3;
+}
+
+.targetName {
+    font-weight: bold;
+    color: var(text-white);
+    transition: transform 0.15s ease;
+}
+
+/*stops link text from being purple after visted*/
+.bubble:link .targetName,
+.bubble:visited .targetName {
+    color: var(--text-white);
+}
+
+.bubble:hover .targetName {
+    transform: scale(1.05);
+}
+
+.closeLink {
+    display: none;
+    background: none;
+    border: none;
+    color: #ff4444;
+    font-size: 16px;
     cursor: pointer;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.bubble-container.active .closeLink {
+    display: inline;
+    padding-right: 3px;
+}
+
+.closeLink:hover {
+    transform: scale(1.2);
 }

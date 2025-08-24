@@ -6,4 +6,4 @@ Adds an inputbox to the top right section of the navbar that instantly opens any
 
 Enter /options or /settings to customize how you want the extension to function.
 
-LG saves valid Twitch names and will use those saved names to auto-complete for you.
+LG saves valid Twitch or Kick names and will use those saved names to auto-complete for you.

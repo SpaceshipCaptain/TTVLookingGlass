@@ -51,16 +51,20 @@
                     Disable autocomplete
             </li>
         </ul>
-        <p id="subNote">- Submitting with Ctrl+Enter will always instantly open a found link.<br>
+        <p id="subNote">- Toggle between Kick and Twitch with shift+tab from inputbox<br>
+            - Submitting with Ctrl+Enter will always instantly open a found link.<br>
             - /clear will remove all generated green link bubbles<br>
             - You may have to reload open pages for option changes to take effect
         </p>
     </main>
     <h3 id="auto-complete">Auto-complete Info</h3>
     <ol>
-        <li>only adds a name to the suggestions list if it's a valid twich user</li>
+        <li>only adds a name to the suggestions list if it's a valid user</li>
+        <li>Twitch names and Kick names are saved to different lists</li>
         <li>suggestions are ranked by input frequency not purely alphabetically.</li>
         <li>"-name" will remove that name from auto-complete list. example: -spaceshipcaptain</li>
+        <li>"/cleartwitch" Will clear all Twitch.tv suggestions but not Kick suggestions</li>
+        <li>"/clearkick" Will clear all Kick.com suggestions but not Twitch suggestions</li>
         <li>"/clearAllNames" If you want to clear all names from auto-complete list.</li>
         <li>Name list is stored locally in your browser. No data is logged to a server.</li>
     </ol>
@@ -74,7 +78,7 @@
         </p>
     <h3 id="problems">Problems or suggestions?</h3>
     LookingGlass should now be more reliable than before, but it can still break. 
-    It uses Twitch's tags to embed itself into the page, so the extension may fail to load if Twitch modifies the tags it's trying to embed on. 
+    It uses Twitch and Kick's tags to embed itself into the page, so the extension may fail to load if that site modifies the tags it's trying to embed on. 
     If you notice a problem, you can check the GitHub issues tab to see if it has been reported yet, and you can open a new issue if not. 
     If you prefer not to use GitHub, it's totally fine to email me directly. You can find my email on both web store pages. 
     Links to the GitHub repository and web stores are at the top right of this page. <br><br>
