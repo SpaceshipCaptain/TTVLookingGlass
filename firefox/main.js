@@ -1,12 +1,10 @@
 console.log("TTVLookingGlass Extension Initiated. Created by SpaceshipCaptain");
 //Firefox
 let guiObj = {
+    expressWrapper: null,
     expressInputBox: null,
-    wrapper: null,
+    mainWrapper: null,
     topDiv: null,
-    iconContainer: null,
-    twitchIcon: null,
-    kickIcon: null,
     inputBox: null,
     infoDiv: null,
     botDiv: null,
@@ -102,31 +100,44 @@ function kickTargets() {
     if (target) { return target }
 
     const main = document.querySelector('main')
-    const backup = main.childNodes[1];
-    if (backup) { return backup }
+    if (main && main.childNodes[1]) {
+        return main.childNodes[1]
+    }
 }
 
-//targets the prime loot crown on navbar
 function expressCheck() {
     const existingInputBox = document.getElementById("expressInputBox");
     if (existingInputBox) return;
 
     if (lgData.site === "twitch") {
         if (window.location.hostname === "clips.twitch.tv") { return; }
-        const target = document.querySelector("div.top-nav__prime");
-        if (target) {//if target exists create input
+        const target = document.querySelector("div.top-nav__search-container");
+        if (target) {
             expressVodSetup(target.parentNode);
+            setApiState("twitch");
         }
     } else if (lgData.site === "kick") {
         const nav = document.querySelector("nav")
-        expressVodSetup(nav.lastChild)
+        expressVodSetup(nav.childNodes[1])
+        setApiState("kick");
     }
 }
 
-
 function expressVodSetup(target) {
+    // this is kinda hacky
+    if (lgData.site === "twitch") {
+        target.style.position = "relative";
+    }
+
+    guiObj.expressWrapper = document.createElement("div");
+    guiObj.expressWrapper.setAttribute("id", "expressWrapper");
+    target.appendChild(guiObj.expressWrapper);
+
     guiObj.expressInputBox = document.createElement("input");
-    target.prepend(guiObj.expressInputBox);
+    const expressIconContainer = createIconToggle(guiObj.expressInputBox);
+    guiObj.expressWrapper.appendChild(expressIconContainer);
+    // append the inputbox after creating the icons for ordering
+    guiObj.expressWrapper.appendChild(guiObj.expressInputBox);
 
     guiObj.expressInputBox.setAttribute("id", "expressInputBox");
     guiObj.expressInputBox.classList.add("inputBox");
@@ -138,13 +149,7 @@ function expressVodSetup(target) {
         guiObj.expressInputBox.addEventListener("input", handleInput);
         guiObj.expressInputBox.addEventListener("keydown", inputQOL);
     }
-    if (lgData.site === "twitch") {
-        setApiTargetTwitch()
-    } else if (lgData.site === "kick") {
-        setApiTargetKick()
-    }
 }
-
 
 function expressGo(event) {
     if (event.code === "Enter" || event.keyCode === 13) {
@@ -180,8 +185,35 @@ const expressAPI = async (input) => {
     }
 };
 
+function createIconToggle(inputBox) {
+    const iconContainer = document.createElement("div");
+    iconContainer.setAttribute("class", "iconContainer");
+
+    const twitchIcon = iconContainer.appendChild(document.createElement("img"));
+    twitchIcon.setAttribute("class", "api-icon twitch-icon");
+    twitchIcon.setAttribute("src", chrome.runtime.getURL("icons/twitch.svg"));
+
+    const kickIcon = iconContainer.appendChild(document.createElement("img"));
+    kickIcon.setAttribute("class", "api-icon kick-icon");
+    kickIcon.setAttribute("src", chrome.runtime.getURL("icons/kick.svg"));
+
+    // Left or Right click icon to toggle the API target
+    iconContainer.addEventListener("click", (event) => {
+        event.preventDefault();
+        toggleApiTarget();
+        inputBox.focus();
+    });
+    iconContainer.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        toggleApiTarget();
+        inputBox.focus();
+    });
+
+    return iconContainer;
+}
+
 function guiCheck() {
-    const existingGUI = document.getElementById("guiWrapper");
+    const existingGUI = document.getElementById("mainWrapper");
     const url = window.location.pathname;
     // if the GUI matches current url do nothing else remove it
     if (existingGUI) {
@@ -189,7 +221,7 @@ function guiCheck() {
             return;
         } else {
             existingGUI.remove();
-            guiObj.wrapper = null;
+            guiObj.mainWrapper = null;
             lgData.noVodData = null;
         }
     }
@@ -200,7 +232,7 @@ function guiCheck() {
             if (guiTarget) {
                 guiConstructor(guiTarget);
                 dataConstructor();
-                setApiTargetTwitch();
+                setApiState("twitch")
             }
         }
     } else if (lgData.site === "kick") {
@@ -209,7 +241,7 @@ function guiCheck() {
             if (guiTarget) {
                 guiConstructor(guiTarget);
                 dataConstructor();
-                setApiTargetKick();
+                setApiState("kick", true)
             }
         }
     }
@@ -217,34 +249,17 @@ function guiCheck() {
 
 function guiConstructor(target) {
     lgData.url = window.location.pathname;
-    guiObj.wrapper = target.parentNode.insertBefore(document.createElement("div"), target);
-    guiObj.wrapper.setAttribute("id", "guiWrapper");
+    guiObj.mainWrapper = target.parentNode.insertBefore(document.createElement("div"), target);
+    guiObj.mainWrapper.setAttribute("id", "mainWrapper");
 
-    guiObj.topDiv = guiObj.wrapper.appendChild(document.createElement("div"));
+    guiObj.topDiv = guiObj.mainWrapper.appendChild(document.createElement("div"));
     guiObj.topDiv.setAttribute("id", "topDiv");
 
-    // Create a container for the icons
-    guiObj.iconContainer = guiObj.topDiv.appendChild(document.createElement("div"));
-    guiObj.iconContainer.setAttribute("id", "iconContainer");
+    guiObj.inputBox = document.createElement("input");
+    const mainIconContainer = createIconToggle(guiObj.inputBox);
+    guiObj.topDiv.appendChild(mainIconContainer);
 
-    // Create the Twitch icon
-    guiObj.twitchIcon = guiObj.iconContainer.appendChild(document.createElement("img"));
-    guiObj.twitchIcon.setAttribute("class", "api-icon");
-    guiObj.twitchIcon.setAttribute("src", browser.runtime.getURL("icons/twitch.svg"));
-
-    // Create the Kick icon
-    guiObj.kickIcon = guiObj.iconContainer.appendChild(document.createElement("img"));
-    guiObj.kickIcon.setAttribute("class", "api-icon");
-    guiObj.kickIcon.setAttribute("src", browser.runtime.getURL("icons/kick.svg"));
-
-    // Left or Right click icon to toggle the API target
-    guiObj.iconContainer.addEventListener("click", toggleApiTarget);
-    guiObj.iconContainer.addEventListener("contextmenu", (event) => {
-        event.preventDefault();
-        toggleApiTarget();
-    });
-
-    guiObj.inputBox = guiObj.topDiv.appendChild(document.createElement("input"));
+    guiObj.topDiv.appendChild(guiObj.inputBox)
     guiObj.inputBox.setAttribute("id", "mainInputBox");
     guiObj.inputBox.setAttribute("class", "inputBox");
     guiObj.inputBox.setAttribute("autocomplete", "off");
@@ -259,7 +274,7 @@ function guiConstructor(target) {
     guiObj.infoDiv.setAttribute("id", "infoDiv");
     infoControl("default");
 
-    guiObj.botDiv = guiObj.wrapper.appendChild(document.createElement("div"))
+    guiObj.botDiv = guiObj.mainWrapper.appendChild(document.createElement("div"))
     guiObj.botDiv.setAttribute("id", "botDiv");
     //this just prevents context menu from popping up if you misclick
     guiObj.botDiv.addEventListener("contextmenu", (event) => {
@@ -267,123 +282,136 @@ function guiConstructor(target) {
     });
 }
 
-function setApiTargetTwitch() {
-    lgData.targetAPI = "twitch";
-    if (guiObj.wrapper) {
-        guiObj.twitchIcon.classList.add("active");
-        guiObj.kickIcon.classList.remove("active");
-        guiObj.inputBox.setAttribute("placeholder", "Search Twitch");
-
-        guiObj.inputBox.classList.remove("kick");
-        guiObj.inputBox.classList.add("twitch");
-    }
-
-    if (guiObj.expressInputBox) {
-        guiObj.expressInputBox.classList.remove("kick");
-        guiObj.expressInputBox.classList.add("twitch");
-    }
-}
-
-function setApiTargetKick() {
-    lgData.targetAPI = "kick";
-    if (guiObj.wrapper) {
-        guiObj.kickIcon.classList.add("active");
-        guiObj.twitchIcon.classList.remove("active");
-        guiObj.inputBox.setAttribute("placeholder", "Search Kick");
-
-        guiObj.inputBox.classList.remove("twitch");
-        guiObj.inputBox.classList.add("kick");
-    }
-    if (guiObj.expressInputBox) {
-        guiObj.expressInputBox.classList.remove("twitch");
-        guiObj.expressInputBox.classList.add("kick");
-    }
-}
-
 function toggleApiTarget() {
-    if (lgData.targetAPI === "twitch") {
-        setApiTargetKick();
-        if (guiObj.wrapper) {
-            infoControl('targetKick')
+    const nextSite = lgData.targetAPI === "twitch" ? "kick" : "twitch";
+    setApiState(nextSite);
+}
+
+function setApiState(site, suppressInfo = false) {
+    if (site !== "twitch" && site !== "kick") {
+        return;
+    }
+
+    lgData.targetAPI = site;
+    const isTwitch = site === "twitch";
+
+    if (guiObj.mainWrapper) {
+        guiObj.mainWrapper.classList.toggle("twitch", isTwitch);
+        guiObj.mainWrapper.classList.toggle("kick", !isTwitch);
+        guiObj.inputBox.setAttribute("placeholder", isTwitch ? "Search Twitch" : "Search Kick");
+        // don't update info on first render
+        if (!suppressInfo) {
+            infoControl(isTwitch ? "targetTwitch" : "targetKick");
         }
-    } else if (lgData.targetAPI === "kick") {
-        setApiTargetTwitch();
-        if (guiObj.wrapper) {
-            infoControl('targetTwitch')
-        }
+    }
+
+    const expressWrapper = document.getElementById("expressWrapper");
+    if (expressWrapper) {
+        expressWrapper.classList.toggle("twitch", isTwitch);
+        expressWrapper.classList.toggle("kick", !isTwitch);
     }
 }
 
-//colors
-const red = "#f03a17";//not found
-const yellow = "#F4D35E";//commands
+// colors
+const colors = {
+    twitch: "#bc92fb",
+    kick: "#53fc18",
+    error: "#f03a17",// red
+    warn: "#F4D35E"// yellow
+};
 
-//to stop multiple inputs overlapping the timer
+// to stop multiple inputs overlapping the timer
 let infoResetTimeout;
+
+const messages = {
+    default: () => lgData.noVodData
+        ? "No VOD data. Links generated may be inaccurate. Submit /options for more info."
+        : "Enter name to search vods. Submit /options for settings and info.",
+
+    targetTwitch: () =>
+        `Searching&nbsp;<span style="color:${colors.twitch};">Twitch</span>. Use shift+tab inside of inputbox to toggle via hotkey.`,
+
+    targetKick: () =>
+        `Searching&nbsp;<span style="color:${colors.kick};">Kick</span>. Use shift+tab inside of inputbox to toggle via hotkey.`,
+
+    foundVod: (name, nVods, placement, api) => {
+        const place = convertToOrdinal(placement);
+        return `<span style="color:${colors[api]};">${name}</span>&nbsp;Found in ${place} VOD of ${nVods}. Right-click bubble for details.`;
+    },
+
+    noFoundVod: (name, nVods, placement) => {
+        const vodBefore = convertToOrdinal(placement);
+        const vodAfter = convertToOrdinal(placement + 1);
+        return `<span style="color:${colors.error};">${name}</span>&nbsp;Not found. Searched ${nVods} VODs and this occurred in between ${vodBefore} and ${vodAfter} VODs.`;
+    },
+
+    oldVods: (name, nVods) =>
+        `<span style="color:${colors.error};">${name}</span>&nbsp;All ${nVods} VODs are older than this.`,
+
+    olderThanVods: (name, nVods) =>
+        `<span style="color:${colors.error};">${name}</span>&nbsp;This is older than all ${nVods} VODs.`,
+
+    removedName: (name) =>
+        `<span style="color:${colors.warn};">${name}</span>&nbsp;removed from suggestions.`,
+
+    removedTwitchNames: () =>
+        `<span style="color:${colors.warn};">Twitch suggestions have been cleared.</span>`,
+
+    removedKickNames: () =>
+        `<span style="color:${colors.warn};">Kick suggestions have been cleared.</span>`,
+
+    removedAllNames: () =>
+        `<span style="color:${colors.warn};">All suggestions have been cleared.</span>`,
+
+    clear: () =>
+        `<span style="color:${colors.warn};">Cleared all links.</span>`,
+
+    noUser: () =>
+        `<span style="color:${colors.error};">User not found. Try again.</span>`,
+
+    zeroVods: (name) =>
+        `<span style="color:${colors.error};">${name}</span>&nbsp;has 0 vods.`,
+
+    noPlayerTime: () =>
+        `<span style='color:${colors.error};'>ERROR: Can't find player time. Contact Dev if error persists.</span>`,
+
+    notInSuggestions: (name) =>
+        `<span style='color:${colors.error};'>${name}</span>&nbsp;was not in suggestions list.`,
+
+    twitchAPIFail: () =>
+        `<span style='color:${colors.error};'>ERROR: Twitch API did not return data. Contact Dev if this persists.</span>`,
+
+    kickAPIFail: () =>
+        `<span style='color:${colors.error};'>ERROR: Kick API did not return data. Contact Dev if this persists.</span>`,
+
+    apiFail: () =>
+        `<span style='color:${colors.error};'>ERROR: API did not return data. Contact Dev if this persists.</span>`,
+
+    notVod: () =>
+        `<span style='color:${colors.error};'>Not a VOD: LookingGlass disabled.</span>`
+};
 
 function infoControl(textCode, name, nVods, placement) {
     const info = guiObj.infoDiv;
-
-    // clear any existing reset timer.
     clearTimeout(infoResetTimeout);
 
-    let newText = '';
-    let removeGui = false;
+    let newText = "";
 
-    if (textCode === "default") {
-        if (!lgData.noVodData) {
-            newText = "Enter name to search vods. Submit /options for settings and info.";
-        } else {
-            newText = "No VOD data. Links generated may be inaccurate. Submit /options for more info.";
-            info.classList.add("infoWarning");//set text to orange as warning that it might not be accurate
-        }
-    } else if (textCode === "targetTwitch") {
-        newText = "Searching Twitch. Use shift+tab inside of inputbox to toggle via hotkey";
-    } else if (textCode === "targetKick") {
-        newText = "Searching Kick. Use shift+tab inside of inputbox to toggle via hotkey";
-    } else if (textCode === "foundVod") {
-        const place = convertToOrdinal(placement);
-        newText = ` Found in ${place} VOD of ${nVods}. Right-click bubble for details.`;
-    } else if (textCode === "noFoundVod") {
-        const vodBefore = convertToOrdinal(placement);
-        const vodAfter = convertToOrdinal(placement + 1);
-        newText = `<span style="color: ${red};">${name}</span> Not found. Searched ${nVods} VODs and this occurred in between ${vodBefore} and ${vodAfter} VODs.`;
-    } else if (textCode === "oldVods") {
-        newText = `<span style="color: ${red};">${name}</span> All ${nVods} VODs are older than this.`;
-    } else if (textCode === "olderThanVods") {
-        newText = `<span style="color: ${red};">${name}</span> This is older than all ${nVods} VODs.`;
-    } else if (textCode === "removedName") {
-        newText = `<span style="color: ${yellow};">${name}</span> removed from suggestions.`;
-    } else if (textCode === "removedTwitchNames") {
-        newText = `<span style="color: ${yellow};">Twitch suggestions have been cleared.</span>`;
-    } else if (textCode === "removedKickNames") {
-        newText = `<span style="color: ${yellow};">Kick suggestions have been cleared.</span>`;
-    } else if (textCode === "removedAllNames") {
-        newText = `<span style="color: ${yellow};">All suggestions have been cleared.</span>`;
-    } else if (textCode === "clear") {
-        newText = `<span style="color: ${yellow};">Cleared all links.</span>`;
-    } else if (textCode === "noUser") {
-        newText = `<span style="color: ${red};">User not found. Try again.</span>`;
+    if (messages[textCode]) {
+        newText = messages[textCode](name, nVods, placement, lgData.targetAPI);
+    }
+
+    if (lgData.noVodData) {
+        info.classList.add("infoWarning");
+    }
+
+    if (textCode === "noUser") {
         flashRed(guiObj.inputBox);
-    } else if (textCode === "zeroVods") {
-        newText = `<span style="color: ${red};">${name}</span> has 0 vods.`;
-    } else if (textCode === "noPlayerTime") {
-        newText = `<span style='color: ${red};'>ERROR: Can't find player time. Contact Dev if error persists.</span>`;
-    } else if (textCode === "notInSuggestions") {
-        newText = `<span style='color: ${red};'>${name}</span> was not in suggestions list.`;
-    } else if (textCode === "twitchAPIFail" || textCode === "kickAPIFail") {
-        newText = `<span style='color: ${red};'>ERROR: ${textCode.includes("Twitch") ? "Twitch" : "Kick"} API did not return data. Contact Dev if this persists.</span>`;
-        if (guiObj.iconContainer) guiObj.iconContainer.remove();
+    }
+
+    if (textCode === "apiFail" || textCode === "notVod") {
         if (guiObj.inputBox) guiObj.inputBox.remove();
-        removeGui = true;
-    } else if (textCode === "apiFail") {
-        newText = `<span style='color: ${red};'>ERROR:${name} API did not return data. Contact Dev if this persists.</span>`;
-    } else if (textCode === "notVod") {
-        newText = `<span style='color: ${red};'>Not a VOD: LookingGlass disabled.</span>`;
-        if (guiObj.iconContainer) guiObj.iconContainer.remove();
-        if (guiObj.inputBox) guiObj.inputBox.remove();
-        if (guiObj.botDiv) guiObj.botDiv.remove();
-        removeGui = true;
+        if (textCode === "notVod" && guiObj.botDiv) guiObj.botDiv.remove();
         setTimeout(() => { if (guiObj.topDiv) guiObj.topDiv.remove(); }, 4500);
     }
 
@@ -392,8 +420,7 @@ function infoControl(textCode, name, nVods, placement) {
         info.innerHTML = newText;
         info.style.opacity = "1";
 
-        // If it's the "default" state or a permanent error, don't set the reset timer.
-        if (textCode !== "default" && !removeGui) {
+        if (textCode !== "default") {
             infoResetTimeout = setTimeout(resetInfo, 6000);
         }
     }, 200);
@@ -578,10 +605,10 @@ function removeName(name) {
         delete lgData.suggestions[targetSite][lowercaseName];
 
         browser.storage.local.set({ suggestions: lgData.suggestions }, () => {
-            if (guiObj.wrapper) { infoControl("removedName", name) };
+            if (guiObj.mainWrapper) { infoControl("removedName", name) };
         });
     } else {
-        if (guiObj.wrapper) { infoControl("notInSuggestions", name) };
+        if (guiObj.mainWrapper) { infoControl("notInSuggestions", name) };
     }
 }
 
@@ -613,7 +640,7 @@ function commandInput(command, inputBox) {
     if (input === "options" || input === "settings") {
         browser.runtime.sendMessage({ type: "openOptionsPage" });
     }
-    else if (input === "clear" && guiObj.wrapper) {
+    else if (input === "clear" && guiObj.mainWrapper) {
         clearBubbles();
     }
     else if (input === "clearallnames") {
@@ -636,7 +663,7 @@ function clearBubbles() {
     newBotDiv.addEventListener("contextmenu", function (event) {
         event.preventDefault();
     });
-    guiObj.wrapper.replaceChild(newBotDiv, guiObj.botDiv);
+    guiObj.mainWrapper.replaceChild(newBotDiv, guiObj.botDiv);
     guiObj.botDiv = newBotDiv;
     infoControl("clear");
 }
