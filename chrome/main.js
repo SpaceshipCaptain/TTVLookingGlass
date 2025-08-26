@@ -231,7 +231,7 @@ function guiCheck() {
             if (guiTarget) {
                 guiConstructor(guiTarget);
                 dataConstructor();
-                setApiState("twitch")
+                setApiState("twitch", true)
             }
         }
     } else if (lgData.site === "kick") {

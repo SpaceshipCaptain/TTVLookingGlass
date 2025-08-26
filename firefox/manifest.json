@@ -2,7 +2,7 @@
   "name": "TTV Looking Glass",
   "description": "Helps you sync clips and vods across both Twitch.tv and Kick.com by generating links.",
   "manifest_version": 3,
-  "version": "0.0.1.29",
+  "version": "0.0.1.30",
   "browser_specific_settings": {
     "gecko": {
       "id": "{b54ef0ac-b5f4-4083-b02d-f58dbcb7a42d}"
