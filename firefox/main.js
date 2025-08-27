@@ -111,27 +111,22 @@ function expressCheck() {
 
     if (lgData.site === "twitch") {
         if (window.location.hostname === "clips.twitch.tv") { return; }
-        const target = document.querySelector("div.top-nav__search-container");
+        const target = document.querySelector("div.top-nav__prime");
         if (target) {
             expressVodSetup(target.parentNode);
             setApiState("twitch");
         }
     } else if (lgData.site === "kick") {
         const nav = document.querySelector("nav")
-        expressVodSetup(nav.childNodes[1])
+        expressVodSetup(nav.lastChild)
         setApiState("kick");
     }
 }
 
 function expressVodSetup(target) {
-    // this is kinda hacky
-    if (lgData.site === "twitch") {
-        target.style.position = "relative";
-    }
-
     guiObj.expressWrapper = document.createElement("div");
     guiObj.expressWrapper.setAttribute("id", "expressWrapper");
-    target.appendChild(guiObj.expressWrapper);
+    target.prepend(guiObj.expressWrapper);
 
     guiObj.expressInputBox = document.createElement("input");
     const expressIconContainer = createIconToggle(guiObj.expressInputBox);

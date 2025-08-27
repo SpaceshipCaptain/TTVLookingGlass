@@ -2,7 +2,7 @@
   "name": "TTV Looking Glass",
   "description": "Generates links to other VODs allowing you to easily sync clips and vods.",
   "manifest_version": 3,
-  "version": "0.0.1.30",
+  "version": "0.0.1.32",
   "icons": {
     "48": "icons/48.png",
     "128": "icons/128.png"

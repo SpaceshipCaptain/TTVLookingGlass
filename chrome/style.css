@@ -21,10 +21,10 @@
 #expressWrapper {
     display: flex;
     align-items: center;
-    position: absolute;
-    right: 0;
     opacity: 50%;
     transition: opacity .5s;
+    min-width: 124px;
+    margin-right: 6px;
 }
 
 #expressInputBox {
