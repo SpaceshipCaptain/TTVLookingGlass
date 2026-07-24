@@ -52,9 +52,14 @@ async function handleApiRequest({ site, queryType, slug, username, nVods }) {
     }
     if (site === "kick") {
         if (queryType === "video") {
-            const endpoint = `https://kick.com/api/v1/video/${slug}`;
+            const channelData = await kickApi(`https://kick.com/api/v2/channels/${username}`);
+            const endpoint = `https://web.kick.com/api/v1/channels/${channelData.id}/videos`;
             const rawData = await kickApi(endpoint);
-            return shapeKickVideo(rawData);
+            const video = rawData.data.find(v => v.id === slug);
+            if (!video) {
+                throw createError('not_found', `No Kick video found for slug: ${slug}`, 404, 'kick');
+            }
+            return shapeKickVideo(video);
         }
 
         if (queryType === "clip") {
@@ -80,9 +85,11 @@ async function handleApiRequest({ site, queryType, slug, username, nVods }) {
         }
 
         if (queryType === "userVideos") {
-            const endpoint = `https://kick.com/api/v2/channels/${username}/videos`;
+            const channelData = await kickApi(`https://kick.com/api/v2/channels/${username}`);
+            const endpoint = `https://web.kick.com/api/v1/channels/${channelData.id}/videos`;
             const rawData = await kickApi(endpoint);
-            return normalizeKickUserVideos(rawData, username);
+
+            return normalizeKickUserVideos(rawData.data, username);
         }
     }
 }
@@ -150,15 +157,15 @@ function normalizeKickUserVideos(data, username) {
         videos: data.map(videoData => {
             let durationSeconds;
             if (videoData.is_live && videoData.duration === 0) {
-                const startTime = Date.parse(videoData.video.created_at);
+                const startTime = Date.parse(videoData.start_time);
                 const now = Date.now();
                 durationSeconds = Math.floor((now - startTime) / 1000);
             } else {
-                durationSeconds = Math.floor(videoData.duration / 1000);
+                durationSeconds = videoData.duration;
             }
             return {
-                link: `https://kick.com/${username}/videos/${videoData.video.uuid}`,
-                createdAt: videoData.video.created_at,
+                link: `https://kick.com/${username}/videos/${videoData.id}`,
+                createdAt: videoData.start_time,
                 durationSeconds: durationSeconds
             };
         })
@@ -181,11 +188,9 @@ function shapeTwitchClip(data) {
     }
 }
 
-// twitch uses createdAt and kick uses created_at
-// everything should be sent as createdAt
 function shapeKickVideo(data) {
     return {
-        createdAt: data.created_at,
+        createdAt: data.start_time,
     };
 }
 

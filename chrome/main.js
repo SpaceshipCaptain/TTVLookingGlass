@@ -425,6 +425,10 @@ function resetInfo() {
     infoResetTimeout = null;
 }
 
+function getKickVideoUserName(){
+    return window.location.pathname.split('/')[1];
+}
+
 function getSlug() { //gets url slug
     return window.location.pathname.substring(window.location.pathname.lastIndexOf("/") + 1);
 }
@@ -551,7 +555,8 @@ async function handleKickVideo() {
     const apiVideo = await apiCall({
         site: lgData.site,
         queryType: "video",
-        slug: getSlug()
+        slug: getSlug(),
+        username: getKickVideoUserName()
     });
 
     if (!apiVideo) {
