@@ -117,7 +117,7 @@ function expressCheck() {
             setApiState("twitch");
         }
     } else if (lgData.site === "kick") {
-        const nav = document.querySelector("nav")
+        const nav = document.querySelector("nav.relative")
         expressVodSetup(nav.lastChild)
         setApiState("kick");
     }
