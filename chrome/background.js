@@ -107,6 +107,9 @@ async function twitchApi(query) {
         }
 
         const json = await response.json();
+        if (json.errors && !json.data) {
+            throw createError('api_error', `Twitch GQL error: ${json.errors[0]?.message}`, null, 'twitch');
+        }
 
         return json.data;
     } catch (error) {
@@ -173,6 +176,9 @@ function normalizeKickUserVideos(data, username) {
 }
 
 function shapeTwitchVideo(data) {
+    if (!data || !data.video) {
+        throw createError('not_found', 'Twitch video not found', 404, 'twitch');
+    }
     return {
         createdAt: data.video.createdAt,
         broadcastType: data.video.broadcastType,
@@ -180,6 +186,9 @@ function shapeTwitchVideo(data) {
 }
 
 function shapeTwitchClip(data) {
+    if (!data || !data.clip) {
+        throw createError('not_found', 'Twitch clip not found', 404, 'twitch');
+    }
     return {
         login: data.clip.broadcaster.login,
         createdAt: data.clip.createdAt,

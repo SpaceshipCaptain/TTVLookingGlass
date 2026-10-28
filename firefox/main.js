@@ -74,11 +74,9 @@ if (host.includes("twitch.tv")) {
 looper();
 
 function looper() {
-    setTimeout(() => {
-        expressCheck();
-        guiCheck();
-        looper();
-    }, 2000);
+    setTimeout(looper, 2000);
+    try { expressCheck(); } catch (e) { console.error("expressCheck failed:", e); }
+    try { guiCheck(); } catch (e) { console.error("guiCheck failed:", e); }
 }
 
 //This has backup targets if the main embed target fails.
@@ -118,8 +116,10 @@ function expressCheck() {
         }
     } else if (lgData.site === "kick") {
         const nav = document.querySelector('nav[class~="max-lg:hidden"]')
-        expressVodSetup(nav.lastChild)
-        setApiState("kick");
+        if (nav && nav.lastElementChild) {
+            expressVodSetup(nav.lastElementChild);
+            setApiState("kick");
+        }
     }
 }
 
@@ -444,7 +444,7 @@ function getPlayerSeconds() {
             videoElement = videoContainer.querySelector("video");
         }
 
-    } else if (lgData.site == "kick") {
+    } else if (lgData.site === "kick") {
         videoElement = document.getElementById('video-player');
     }
 
@@ -454,7 +454,7 @@ function getPlayerSeconds() {
     }
     if (!videoElement) {
         infoControl("noPlayerTime");
-        return
+        return null;
     }
     //currentTime returns seconds but it's floating point so floor it
     const seconds = Math.floor(videoElement.currentTime);
@@ -475,7 +475,7 @@ const dataConstructor = async () => {
                 await handleTwitchVideo();
             }
         } catch (error) {
-            console.error("Error in dataConstructor:", error);
+            console.error("Error in dataConstructor:", JSON.stringify(error));
             infoControl("twitchAPIFail");
         }
     } else if (lgData.site === "kick") {
@@ -730,17 +730,17 @@ function convertToOrdinal(number) {
 
 // automated is true when this is called automatically but is false
 // when user inputs. So it doesn't save non-user inputs
-async function searchUserVods(username, automated) {
+async function searchUserVods(username, automated, { site = lgData.targetAPI, replace = null } = {}) {
     try {
         const apiData = await apiCall({
-            site: lgData.targetAPI,
+            site: site,
             queryType: "userVideos",
             username: username,
             nVods: 100
         });
 
         if (!automated) { //so it doesn't save name from auto-links on clips
-            saveName(apiData.login, lgData.targetAPI);
+            saveName(apiData.login, site);
         }
         const array = apiData.videos;
         const displayName = apiData.displayName;
@@ -753,7 +753,9 @@ async function searchUserVods(username, automated) {
         let currentVodTime = 0;
 
         if (lgData.url.includes("/video")) {
-            currentVodTime += getPlayerSeconds()
+            const seconds = getPlayerSeconds();
+            if (seconds === null) { return; }
+            currentVodTime = seconds;
         }
         let timeStamp = lgData.timeStamp + currentVodTime;
 
@@ -787,7 +789,7 @@ async function searchUserVods(username, automated) {
                 const urlTimeSeconds = timeStamp - vodStart;
                 let urlTimeFormatted = formatSeconds(urlTimeSeconds)
                 let link = `${array[i].link}?t=`
-                if (lgData.targetAPI === "twitch") {
+                if (site === "twitch") {
                     link = link.concat(urlTimeFormatted)
                 } else {
                     link = link.concat(urlTimeSeconds.toString())
@@ -799,7 +801,10 @@ async function searchUserVods(username, automated) {
                         window.open(link, "_blank")
                     }, 100);
                 }
-                constructLinkBubble(link, displayName, urlTimeFormatted, currentVodTime);
+                constructLinkBubble(link, displayName, urlTimeFormatted, currentVodTime, apiData.login);
+                if (replace) {
+                    replace.replaceWith(guiObj.botDiv.lastElementChild);
+                }
                 infoControl("foundVod", displayName, array.length, i + 1)
                 return;
             } else {
@@ -816,7 +821,7 @@ async function searchUserVods(username, automated) {
     }
 }
 
-function constructLinkBubble(link, name, urlTime, currentVodTime) {
+function constructLinkBubble(link, name, urlTime, currentVodTime, login) {
     const container = guiObj.botDiv.appendChild(document.createElement("div"));
     container.classList.add("bubble-container");
 
@@ -825,11 +830,8 @@ function constructLinkBubble(link, name, urlTime, currentVodTime) {
     bubble.href = link;
     bubble.target = "_blank";
 
-    if (link.includes("twitch.tv")) {
-        bubble.classList.add("twitch");
-    } else if (link.includes("kick.com")) {
-        bubble.classList.add("kick");
-    }
+    const site = link.includes("twitch.tv") ? "twitch" : "kick";
+    bubble.classList.add(site);
 
     // Player time (before name)
     const playerTime = bubble.appendChild(document.createElement("span"));
@@ -859,6 +861,16 @@ function constructLinkBubble(link, name, urlTime, currentVodTime) {
         container.remove(); // Remove the entire container
         infoControl("default");
     });
+
+    if (lgData.url.includes("/video")) {
+        bubble.title = "Alt+click to refresh to the current time";
+        bubble.addEventListener("click", (event) => {
+            if (!event.altKey) return;
+            event.preventDefault();
+            lgData.ctrlState = false;
+            searchUserVods(login, true, { site, replace: container });
+        });
+    }
 
     container.addEventListener("contextmenu", function (event) {
         event.preventDefault();
